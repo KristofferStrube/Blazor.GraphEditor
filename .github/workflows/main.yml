@@ -21,6 +21,10 @@ jobs:
             dotnet-version: '7.0.x'
             include-prerelease: true
 
+        # Added Ahead-Of-Time workload
+        - name: Add AOT Workload
+          run: dotnet workload install wasm-tools
+          
         # Generate the website
         - name: Publish
           run: dotnet publish samples/KristofferStrube.Blazor.GraphEditor.WasmExample/KristofferStrube.Blazor.GraphEditor.WasmExample.csproj --configuration Release --output build
