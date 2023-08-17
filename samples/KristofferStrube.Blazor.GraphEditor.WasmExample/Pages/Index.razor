@@ -1,0 +1,45 @@
+﻿@page "/"
+@using KristofferStrube.Blazor.GraphEditor
+
+<PageTitle>Index</PageTitle>
+
+<h1>Simple graph</h1>
+
+<div style="height:80vh;">
+    <GraphEditor 
+        @ref=GraphEditor
+        TNode="Page"
+        TEdge="Transition"
+        NodeIdMapper="n => n.id"
+        NodeRadiusMapper="n => n.size"
+        NodeColorMapper="n => n.color"
+        EdgeFromMapper="e => e.from"
+        EdgeToMapper="e => e.to"
+        EdgeWidthMapper="e => e.weight*5"
+        EdgeSpringConstantMapper="e => e.weight"
+        EdgeSpringLengthMapper="e => e.length"
+        />
+</div>
+
+@code {
+    private GraphEditor.GraphEditor<Page, Transition> GraphEditor = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await GraphEditor.LoadGraph(
+            new List<Page>() { new("1", size: 60), new("2", "#3333AA"), new("3", "#AA33AA"), new("4", "#AA3333"), new("5", "#AAAA33"), new("6", "#33AAAA"), new("7"), new("8") },
+            new List<Transition>() { new("1", "2", 1), new("1", "3", 1), new("1", "4", 1), new("1", "5", 1), new("1", "6", 1), new("1", "7", 1), new("7", "8", 2, 150) }
+        );
+
+        while(true)
+        {
+            await GraphEditor.ForceDirectedLayout();
+            await Task.Delay(1);
+        }
+    }
+
+    public record Page(string id, string color = "#66BB6A", float size = 50);
+    public record Transition(string from, string to, float weight, float length = 200);
+}

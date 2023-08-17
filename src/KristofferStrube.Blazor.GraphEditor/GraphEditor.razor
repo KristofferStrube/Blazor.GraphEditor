@@ -1,0 +1,9 @@
+﻿@using KristofferStrube.Blazor.SVGEditor
+@typeparam TNode
+@typeparam TEdge
+
+<SVGEditor @ref=SVGEditor
+           Input=@Input
+           InputUpdated="(string s) => { Input = s; StateHasChanged(); }"
+           SupportedElements=SupportedElements
+           DisableContextMenu=true />
