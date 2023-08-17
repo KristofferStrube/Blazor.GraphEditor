@@ -1,0 +1,56 @@
+﻿@page "/bigRandom"
+@using KristofferStrube.Blazor.GraphEditor
+
+<PageTitle>Blazor.GraphEditor - Big Random</PageTitle>
+
+<h1>Big Random Graph</h1>
+
+<div style="height:80vh;">
+    <GraphEditor 
+        @ref=GraphEditor
+        TNode="Page"
+        TEdge="Transition"
+        NodeIdMapper="n => n.id"
+        NodeRadiusMapper="n => n.size"
+        NodeRepulsionMapper="n => n.repulsion"
+        NodeColorMapper="n => n.color"
+        EdgeFromMapper="e => e.from"
+        EdgeToMapper="e => e.to"
+        EdgeWidthMapper="e => e.weight*5"
+        EdgeSpringConstantMapper="e => e.weight"
+        EdgeSpringLengthMapper="e => e.length"
+        />
+</div>
+
+@code {
+    private GraphEditor.GraphEditor<Page, Transition> GraphEditor = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        List<Page> pages = Enumerable
+            .Range(0, 15)
+            .Select(i => new Page(i.ToString(), RandomColor(), 50 + Random.Shared.Next(50), 2000 + Random.Shared.Next(2000)))
+            .ToList();
+
+        List<Transition> transitions = Enumerable
+            .Range(0, 15)
+            .Select(i => new Transition(i.ToString(), Random.Shared.Next(15).ToString(), Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)))
+            .DistinctBy(t => t.from + "-" + t.to)
+            .ToList();
+
+        await GraphEditor.LoadGraph(pages, transitions);
+
+        while(true)
+        {
+            await GraphEditor.ForceDirectedLayout();
+            await Task.Delay(1);
+        }
+    }
+
+    public string RandomColor() => $"#{Random.Shared.Next(255):X2}{Random.Shared.Next(255):X2}{Random.Shared.Next(255):X2}";
+
+    public record Page(string id, string color = "#66BB6A", double size = 50, double repulsion = 800);
+    public record Transition(string from, string to, double weight, double length = 200);
+}
