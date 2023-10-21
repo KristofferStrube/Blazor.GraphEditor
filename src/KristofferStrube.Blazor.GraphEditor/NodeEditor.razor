@@ -29,6 +29,9 @@
 </ContextMenuTrigger>
 
 @code {
+    [CascadingParameter]
+    public required GraphEditorCallbackContext CallbackContext { get; set; }
+
     public new async Task SelectAsync(MouseEventArgs eventArgs)
     {
         if (SVGElement.SVG.EditMode is EditMode.Add && SVGElement.SVG.SelectedShapes.Any(s => s is Edge))
@@ -39,5 +42,6 @@
         {
             await base.SelectAsync(eventArgs);
         }
+        await CallbackContext.NodeSelectionCallback(SVGElement.Id);
     }
 }

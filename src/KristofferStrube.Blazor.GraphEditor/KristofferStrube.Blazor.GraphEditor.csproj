@@ -2,10 +2,33 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>true</ImplicitUsings>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Title>Blazor GraphEditor</Title>
+    <Description>A Graph Editor for Blazor built with SVGs.</Description>
+    <PackageId>KristofferStrube.Blazor.GraphEditor</PackageId>
+    <PackageTags>Blazor;nodes;edges;Wasm;Server;SVG;WYSIWYG;customizable;scaling;panning;</PackageTags>
+    <RepositoryUrl>https://github.com/KristofferStrube/Blazor.GraphEditor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageVersion>0.1.0-alpha</PackageVersion>
+    <Authors>Kristoffer Strube</Authors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="..\..\docs\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
@@ -14,10 +37,6 @@
   <ItemGroup>
     <PackageReference Include="KristofferStrube.Blazor.SVGEditor" Version="0.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.8" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

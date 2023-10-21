@@ -131,8 +131,8 @@ public class Edge : Line
 
         if (distance > 0)
         {
-            X1 = From!.Cx + (differenceX / distance * 50);
-            Y1 = From!.Cy + (differenceY / distance * 50);
+            X1 = From!.Cx + (differenceX / distance * From.R);
+            Y1 = From!.Cy + (differenceY / distance * From.R);
         }
     }
 
@@ -155,8 +155,8 @@ public class Edge : Line
         else
         {
             SetStart((To.Cx, To.Cy));
-            X2 = To.Cx - (differenceX / distance * 50);
-            Y2 = To.Cy - (differenceY / distance * 50);
+            X2 = To.Cx - (differenceX / distance * (To.R + double.Parse(StrokeWidth) * 3));
+            Y2 = To.Cy - (differenceY / distance * (To.R + double.Parse(StrokeWidth) * 3));
         }
     }
 }

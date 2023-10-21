@@ -4,8 +4,9 @@ using System.Text;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
-public partial class GraphEditor<TNode, TEdge>
+public partial class GraphEditor<TNode, TEdge> : ComponentBase
 {
+    private GraphEditorCallbackContext callbackContext = default!;
     private string EdgeId(TEdge e) => EdgeFromMapper(e) + "-" + EdgeToMapper(e);
 
     [Parameter, EditorRequired]
@@ -35,6 +36,22 @@ public partial class GraphEditor<TNode, TEdge>
     [Parameter]
     public Func<TEdge, double> EdgeSpringLengthMapper { get; set; } = _ => 200;
 
+    [Parameter]
+    public Func<TNode, Task>? NodeSelectionCallback { get; set; }
+
+    protected override void OnInitialized()
+    {
+        callbackContext = new()
+        {
+            NodeSelectionCallback = async (id) => {
+                if (NodeSelectionCallback is not null && Nodes.TryGetValue(id, out TNode node))
+                {
+                    await NodeSelectionCallback.Invoke(node);
+                }
+            }
+        };
+    }
+
     public async Task LoadGraph(List<TNode> nodes, List<TEdge> edges)
     {
         Nodes = nodes.ToDictionary(n => NodeIdMapper(n), n => n);
@@ -42,7 +59,7 @@ public partial class GraphEditor<TNode, TEdge>
         StringBuilder sb = new();
         foreach (TEdge edge in edges)
         {
-            sb.Append(@$"<line data-elementtype=""edge"" stroke=""black"" stroke-width=""{EdgeWidthMapper(edge).AsString()}"" data-from=""{EdgeFromMapper(edge)}"" data-to=""{EdgeToMapper(edge)}"" ></line>");
+            sb.Append(@$"<line data-elementtype=""edge"" stroke=""black"" stroke-width=""{EdgeWidthMapper(edge).AsString()}"" data-from=""{EdgeFromMapper(edge)}"" data-to=""{EdgeToMapper(edge)}""></line>");
         }
         foreach (TNode node in nodes)
         {
@@ -53,7 +70,7 @@ public partial class GraphEditor<TNode, TEdge>
         StateHasChanged();
     }
 
-    public async Task ForceDirectedLayout()
+    public Task ForceDirectedLayout()
     {
         foreach (Node node1 in SVGEditor.Elements.Where(e => e is Node))
         {
@@ -85,6 +102,7 @@ public partial class GraphEditor<TNode, TEdge>
         {
             edge.UpdateLine();
         }
+        return Task.CompletedTask;
     }
 
     protected Dictionary<string, TNode> Nodes { get; set; } = new();
