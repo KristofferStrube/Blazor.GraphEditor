@@ -42,6 +42,6 @@
         {
             await base.SelectAsync(eventArgs);
         }
-        await CallbackContext.NodeSelectionCallback(SVGElement.Id);
+        await CallbackContext.NodeSelectionCallback(SVGElement.Id!);
     }
 }

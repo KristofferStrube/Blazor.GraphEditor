@@ -8,7 +8,10 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
 {
     private GraphEditorCallbackContext callbackContext = default!;
     private Node[] nodeElements = [];
-    private string EdgeId(TEdge e) => EdgeFromMapper(e) + "-" + EdgeToMapper(e);
+    private string EdgeId(TEdge e)
+    {
+        return EdgeFromMapper(e) + "-" + EdgeToMapper(e);
+    }
 
     [Parameter, EditorRequired]
     public required Func<TNode, string> NodeIdMapper { get; set; }
@@ -46,7 +49,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
         {
             NodeSelectionCallback = async (id) =>
             {
-                if (NodeSelectionCallback is not null && Nodes.TryGetValue(id, out TNode node))
+                if (NodeSelectionCallback is not null && Nodes.TryGetValue(id, out TNode? node))
                 {
                     await NodeSelectionCallback.Invoke(node);
                 }
@@ -82,7 +85,11 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
             double my = 0;
             for (int j = 0; j < nodeElements.Length; j++)
             {
-                if (i == j) continue;
+                if (i == j)
+                {
+                    continue;
+                }
+
                 Node node2 = nodeElements[j];
                 double dx = node1.Cx - node2.Cx;
                 double dy = node1.Cy - node2.Cy;

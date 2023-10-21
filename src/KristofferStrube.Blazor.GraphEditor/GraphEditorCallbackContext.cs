@@ -2,5 +2,5 @@
 
 public class GraphEditorCallbackContext
 {
-    public Func<string, Task> NodeSelectionCallback { get; set; }
+    public required Func<string, Task> NodeSelectionCallback { get; set; }
 }

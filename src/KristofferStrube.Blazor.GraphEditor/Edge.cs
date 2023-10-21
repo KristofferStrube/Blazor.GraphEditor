@@ -1,5 +1,4 @@
 ﻿using AngleSharp.Dom;
-using KristofferStrube.Blazor.GraphEditor.Extensions;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -18,7 +17,7 @@ public class Edge : Line
     {
         get
         {
-            var from = (Node?)SVG.Elements.FirstOrDefault(e => e is Node && e.Id == Element.GetAttribute("data-from"));
+            Node? from = (Node?)SVG.Elements.FirstOrDefault(e => e is Node && e.Id == Element.GetAttribute("data-from"));
             _ = from?.Edges.Add(this);
             return from;
         }
@@ -45,7 +44,7 @@ public class Edge : Line
     {
         get
         {
-            var to = (Node?)SVG.Elements.FirstOrDefault(e => e is Node && e.Id == Element.GetAttribute("data-to"));
+            Node? to = (Node?)SVG.Elements.FirstOrDefault(e => e is Node && e.Id == Element.GetAttribute("data-to"));
             _ = to?.Edges.Add(this);
             return to;
         }
