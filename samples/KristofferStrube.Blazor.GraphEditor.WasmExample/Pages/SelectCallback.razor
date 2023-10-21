@@ -6,13 +6,13 @@
 
 <h1>Select Callback</h1>
 
-@if (selectNode is null)
+@if (selectPage is null)
 {
     <p>On this page you can select a node to get information about it using callbacks.</p>
 }
 else
 {
-    <p>You selected the node with id: <code>@selectNode</code></p>
+    <p>You selected the node with id: <code>@selectPage.id</code> which has the following description: <i>@selectPage.description</i></p>
 }
 
 <div style="height:70vh;">
@@ -28,22 +28,23 @@ else
         EdgeWidthMapper="e => e.weight*5"
         EdgeSpringConstantMapper="e => e.weight"
         EdgeSpringLengthMapper="e => e.length"
-        NodeSelectionCallback="(page) => { selectNode = page.id; StateHasChanged(); return Task.CompletedTask; }"
+        NodeRepulsionMapper="n => 10_000"
+        NodeSelectionCallback="(page) => { selectPage = page; StateHasChanged(); return Task.CompletedTask; }"
         />
 </div>
 
 @code {
     private GraphEditor.GraphEditor<Page, Transition> GraphEditor = default!;
     private bool running = true;
-    private string? selectNode;
+    private Page? selectPage;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
 
         await GraphEditor.LoadGraph(
-            new List<Page>() { new("1"), new("2"), new("3"), new("4") },
-            new List<Transition>() { new("1", "2", 1), new("1", "3", 1), new("1", "4", 1) }
+            new List<Page>() { new("1", "First nodes description."), new("2", "Second nodes description."), new("3", "Third nodes description."), new("4", "Fourth nodes description.") },
+            new List<Transition>() { new("1", "2", 1), new("2", "3", 1), new("3", "4", 1), new("4", "1", 1) }
         );
 
         while (running)
@@ -53,7 +54,7 @@ else
         }
     }
 
-    public record Page(string id, string color = "#66BB6A", float size = 50);
+    public record Page(string id, string description, string color = "#66BB6A", float size = 50);
     public record Transition(string from, string to, float weight, float length = 200);
 
     public void Dispose()
