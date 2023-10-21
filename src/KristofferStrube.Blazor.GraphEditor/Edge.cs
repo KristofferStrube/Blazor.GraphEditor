@@ -148,7 +148,7 @@ public class Edge : Line
         double differenceY = To.Cy - From.Cy;
         double distance = Math.Sqrt((differenceX * differenceX) + (differenceY * differenceY));
 
-        if (distance < 100)
+        if (distance < To.R + From.R)
         {
             (X1, Y1) = (X2, Y2);
         }

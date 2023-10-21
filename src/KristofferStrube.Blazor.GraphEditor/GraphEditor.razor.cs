@@ -7,6 +7,7 @@ namespace KristofferStrube.Blazor.GraphEditor;
 public partial class GraphEditor<TNode, TEdge> : ComponentBase
 {
     private GraphEditorCallbackContext callbackContext = default!;
+    private Node[] nodeElements = [];
     private string EdgeId(TEdge e) => EdgeFromMapper(e) + "-" + EdgeToMapper(e);
 
     [Parameter, EditorRequired]
@@ -43,7 +44,8 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
     {
         callbackContext = new()
         {
-            NodeSelectionCallback = async (id) => {
+            NodeSelectionCallback = async (id) =>
+            {
                 if (NodeSelectionCallback is not null && Nodes.TryGetValue(id, out TNode node))
                 {
                     await NodeSelectionCallback.Invoke(node);
@@ -68,18 +70,25 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
         Input = sb.ToString();
         await Task.Yield();
         StateHasChanged();
+        nodeElements = SVGEditor.Elements.Where(e => e is Node).Select(e => (Node)e).ToArray();
     }
 
+    private bool iterationReversed = false;
     public Task ForceDirectedLayout()
     {
-        foreach (Node node1 in SVGEditor.Elements.Where(e => e is Node))
+        Node[] nodes = iterationReversed ? nodeElements.Reverse().ToArray() : nodeElements;
+        for (int i = 0; i < nodeElements.Length; i++)
         {
-            if (SVGEditor.SelectedShapes.Contains(node1)) continue;
-            foreach (Node node2 in SVGEditor.Elements.Where(e => e is Node && e != node1))
+            Node node1 = nodes[i];
+            double mx = 0;
+            double my = 0;
+            for (int j = 0; j < nodeElements.Length; j++)
             {
-                var dx = node1.Cx - node2.Cx;
-                var dy = node1.Cy - node2.Cy;
-                var d = Math.Sqrt(dx * dx + dy * dy);
+                if (i == j) continue;
+                Node node2 = nodes[j];
+                double dx = node1.Cx - node2.Cx;
+                double dy = node1.Cy - node2.Cy;
+                double d = Math.Sqrt(dx * dx + dy * dy);
                 double force;
                 if (node1.Edges.FirstOrDefault(e => e.To == node2 || e.From == node2) is Edge { } e)
                 {
@@ -93,10 +102,18 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
                 {
                     force = -(NodeRepulsionMapper(Nodes[node1.Id!]) + NodeRepulsionMapper(Nodes[node2.Id!])) / 2 / (d * d);
                 }
-                node1.Cx -= dx * 0.1 * force;
-                node1.Cy -= dy * 0.1 * force;
+
+                mx -= dx * 0.1 * force;
+                my -= dy * 0.1 * force;
+            }
+
+            if (!SVGEditor.SelectedShapes.Contains(node1))
+            {
+                node1.Cx += mx;
+                node1.Cy += my;
             }
         }
+        iterationReversed = !iterationReversed;
 
         foreach (Edge edge in SVGEditor.Elements.Where(e => e is Edge))
         {
