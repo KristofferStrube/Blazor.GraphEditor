@@ -73,19 +73,17 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
         nodeElements = SVGEditor.Elements.Where(e => e is Node).Select(e => (Node)e).ToArray();
     }
 
-    private bool iterationReversed = false;
     public Task ForceDirectedLayout()
     {
-        Node[] nodes = iterationReversed ? nodeElements.Reverse().ToArray() : nodeElements;
         for (int i = 0; i < nodeElements.Length; i++)
         {
-            Node node1 = nodes[i];
+            Node node1 = nodeElements[i];
             double mx = 0;
             double my = 0;
             for (int j = 0; j < nodeElements.Length; j++)
             {
                 if (i == j) continue;
-                Node node2 = nodes[j];
+                Node node2 = nodeElements[j];
                 double dx = node1.Cx - node2.Cx;
                 double dy = node1.Cy - node2.Cy;
                 double d = Math.Sqrt(dx * dx + dy * dy);
@@ -113,7 +111,6 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
                 node1.Cy += my;
             }
         }
-        iterationReversed = !iterationReversed;
 
         foreach (Edge edge in SVGEditor.Elements.Where(e => e is Edge))
         {
