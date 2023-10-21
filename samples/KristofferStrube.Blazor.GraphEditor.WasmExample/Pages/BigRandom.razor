@@ -1,6 +1,7 @@
 ﻿@page "/BigRandom"
 @implements IDisposable
 @using KristofferStrube.Blazor.GraphEditor
+@using System.Text;
 
 <PageTitle>Blazor.GraphEditor - Big Random</PageTitle>
 
@@ -57,7 +58,25 @@
         }
     }
 
-    public string RandomColor() => $"#{Random.Shared.Next(255):X2}{Random.Shared.Next(255):X2}{Random.Shared.Next(255):X2}";
+    public string RandomColor()
+    {
+        float red = 0;
+        float green = 0;
+        float blue = 0;
+
+        while (Math.Abs(blue - green) + Math.Abs(blue - red) + Math.Abs(red - green) < 200)
+        {
+            red = Random.Shared.Next(0, 150);
+            green = Random.Shared.Next(0, 150);
+            blue = 225 - red - green;
+        }
+        if (blue > 150)
+        {
+            blue = 150;
+        }
+
+        return $"#{(int)(50 + red):X2}{(int)(50 + green):X2}{(int)(50 + blue):X2}";
+    }
 
     public record Page(string id, string color = "#66BB6A", double size = 50, double repulsion = 800);
     public record Transition(string from, string to, double weight, double length = 200);
