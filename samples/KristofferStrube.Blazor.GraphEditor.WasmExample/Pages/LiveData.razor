@@ -13,13 +13,13 @@
                  TNode="Page"
                  TEdge="Transition"
                  NodeIdMapper="n => n.id"
-                 NodeRepulsionMapper="n => n.Repulsion"
                  NodeColorMapper=ColorMapper
+                 NodeRepulsionMapper="_ => 4000"
                  EdgeFromMapper="e => e.from"
                  EdgeToMapper="e => e.to"
                  EdgeWidthMapper="e => e.weight*5"
                  EdgeSpringConstantMapper="e => e.weight"
-                 EdgeSpringLengthMapper="e => e.Length" />
+                 EdgeSpringLengthMapper=EdgeLengthMapper />
 </div>
 
 @code {
@@ -34,20 +34,8 @@
 
         int nodeCount = 8;
 
-        var pages = Enumerable
-            .Range(0, nodeCount)
-            .Select(i =>
-                new Page(i.ToString())
-                    {
-                        ColorOffset = i * Math.PI * 2 / nodeCount
-                    })
-            .ToList();
-
-        var edges = Enumerable
-            .Range(0, nodeCount)
-            .Select(i =>
-                new Transition(pages[i % nodeCount], pages[(i + 1) % nodeCount], 1))
-            .ToList();
+        var pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { ColorOffset = i * Math.PI * 2 / nodeCount }).ToList();
+        var edges = Enumerable.Range(0, nodeCount).Select(i => new Transition(pages[i % nodeCount], pages[(i + 1) % nodeCount], 1)).ToList();
 
         await GraphEditor.LoadGraph(pages, edges);
 
@@ -56,12 +44,7 @@
             edgeLengthSinAngle = edgeLengthSinAngle + 0.01f % Math.PI * 2;
             pages.ForEach(p =>
             {
-                p.Repulsion = p.Repulsion < 10_000 ? p.Repulsion - 100 : 10_000;
-                p.ColorOffset = p.ColorOffset + 0.02 % (Math.PI * 2);
-            });
-            edges.ForEach(e =>
-            {
-                e.Length = 150 + Math.Cos(e.from.ColorOffset) * 50;
+                p.ColorOffset = p.ColorOffset + 0.01 % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
             await Task.Delay(1);
@@ -76,15 +59,13 @@
         return $"#{red}{green}{blue}";
     }
 
+    double EdgeLengthMapper(Transition edge) => edge.length * (1.5 + Math.Sin(edgeLengthSinAngle) / 2);
+
     public record Page(string id)
     {
-        public double Repulsion { get; set; } = 10_000;
         public double ColorOffset { get; set; }
     }
-    public record Transition(Page from, Page to, float weight)
-    {
-        public double Length { get; set; }
-    }
+    public record Transition(Page from, Page to, float weight, float length = 100);
 
     public void Dispose()
     {
