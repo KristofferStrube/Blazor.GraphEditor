@@ -30,10 +30,18 @@
     {
         if (!firstRender) return;
 
-        await GraphEditor.LoadGraph(
-            new List<Page>() { new("1", size: 60), new("2", "#3333AA"), new("3", "#AA33AA"), new("4", "#AA3333"), new("5", "#AAAA33"), new("6", "#33AAAA"), new("7"), new("8") },
-            new List<Transition>() { new("1", "2", 1), new("1", "3", 1), new("1", "4", 1), new("1", "5", 1), new("1", "6", 1), new("1", "7", 1), new("7", "8", 2, 150) }
-        );
+        var pages = new List<Page>() { new("1", size: 60), new("2", "#3333AA"), new("3", "#AA33AA"), new("4", "#AA3333"), new("5", "#AAAA33"), new("6", "#33AAAA"), new("7"), new("8") };
+
+        var edges = new List<Transition>() {
+            new(pages[0], pages[1], 1),
+            new(pages[0], pages[2], 1),
+            new(pages[0], pages[3], 1),
+            new(pages[0], pages[4], 1),
+            new(pages[0], pages[5], 1),
+            new(pages[0], pages[6], 1),
+            new(pages[6], pages[7], 2, 150) };
+
+        await GraphEditor.LoadGraph(pages, edges);
 
         while (running)
         {
@@ -43,7 +51,7 @@
     }
 
     public record Page(string id, string color = "#66BB6A", float size = 50);
-    public record Transition(string from, string to, float weight, float length = 200);
+    public record Transition(Page from, Page to, float weight, float length = 200);
 
     public void Dispose()
     {

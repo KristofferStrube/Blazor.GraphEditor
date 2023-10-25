@@ -4,68 +4,26 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
-public class Edge : Line
+public class Edge<TNodeData, TEdgeData> : Line
 {
     public Edge(IElement element, SVGEditor.SVGEditor svg) : base(element, svg)
     {
         UpdateLine();
     }
 
-    public override Type Presenter => typeof(EdgeEditor);
+    public override Type Presenter => typeof(EdgeEditor<TNodeData, TEdgeData>);
 
-    public Node? From
-    {
-        get
-        {
-            Node? from = (Node?)SVG.Elements.FirstOrDefault(e => e is Node && e.Id == Element.GetAttribute("data-from"));
-            _ = from?.Edges.Add(this);
-            return from;
-        }
-        set
-        {
-            if (From is { } from)
-            {
-                _ = from.Edges.Remove(this);
-            }
-            if (value is null)
-            {
-                _ = Element.RemoveAttribute("data-from");
-            }
-            else
-            {
-                Element.SetAttribute("data-from", value.Id);
-                _ = value.Edges.Add(this);
-            }
-            Changed?.Invoke(this);
-        }
-    }
+    public GraphEditor<TNodeData, TEdgeData> GraphEditor { get; set; }
 
-    public Node? To
-    {
-        get
-        {
-            Node? to = (Node?)SVG.Elements.FirstOrDefault(e => e is Node && e.Id == Element.GetAttribute("data-to"));
-            _ = to?.Edges.Add(this);
-            return to;
-        }
-        set
-        {
-            if (To is { } to)
-            {
-                _ = to.Edges.Remove(this);
-            }
-            if (value is null)
-            {
-                _ = Element.RemoveAttribute("data-to");
-            }
-            else
-            {
-                Element.SetAttribute("data-to", value.Id);
-                _ = value.Edges.Add(this);
-            }
-            Changed?.Invoke(this);
-        }
-    }
+    public TEdgeData Data { get; set; }
+
+    public Node<TNodeData, TEdgeData> From { get; set; }
+
+    public Node<TNodeData, TEdgeData> To { get; set; }
+
+    public new string StrokeWidth => GraphEditor.EdgeWidthMapper(Data).AsString();
+
+    public new string Stroke => "black";
 
     public override void HandlePointerMove(PointerEventArgs eventArgs)
     {
@@ -79,7 +37,7 @@ public class Edge : Line
     public override void HandlePointerUp(PointerEventArgs eventArgs)
     {
         if (SVG.EditMode is EditMode.Add
-            && SVG.SelectedShapes.FirstOrDefault(s => s is Node node && node != From) is Node { } to)
+            && SVG.SelectedShapes.FirstOrDefault(s => s is Node<TNodeData, TEdgeData> node && node != From) is Node<TNodeData, TEdgeData> { } to)
         {
             if (to.Edges.Any(c => c.To == From || c.From == From))
             {
@@ -101,25 +59,6 @@ public class Edge : Line
             SVG.RemoveElement(this);
             Changed?.Invoke(this);
         }
-    }
-
-    public static void AddNew(SVGEditor.SVGEditor SVG, Node from)
-    {
-        IElement element = SVG.Document.CreateElement("LINE");
-        element.SetAttribute("data-elementtype", "edge");
-
-        Edge edge = new(element, SVG)
-        {
-            Changed = SVG.UpdateInput,
-            Stroke = "black",
-            StrokeWidth = "5",
-            From = from
-        };
-        SVG.EditMode = EditMode.Add;
-
-        SVG.ClearSelectedShapes();
-        SVG.SelectShape(edge);
-        SVG.AddElement(edge);
     }
 
     public void SetStart((double x, double y) towards)
@@ -154,8 +93,33 @@ public class Edge : Line
         else
         {
             SetStart((To.Cx, To.Cy));
-            X2 = To.Cx - (differenceX / distance * (To.R + double.Parse(StrokeWidth) * 3));
-            Y2 = To.Cy - (differenceY / distance * (To.R + double.Parse(StrokeWidth) * 3));
+            X2 = To.Cx - (differenceX / distance * (To.R + GraphEditor.EdgeWidthMapper(Data) * 3));
+            Y2 = To.Cy - (differenceY / distance * (To.R + GraphEditor.EdgeWidthMapper(Data) * 3));
         }
+    }
+
+    public static Edge<TNodeData, TEdgeData> AddNew(
+        SVGEditor.SVGEditor SVG,
+        GraphEditor<TNodeData, TEdgeData> graphEditor,
+        TEdgeData data,
+        Node<TNodeData, TEdgeData> from,
+        Node<TNodeData, TEdgeData> to)
+    {
+        IElement element = SVG.Document.CreateElement("LINE");
+        element.SetAttribute("data-elementtype", "edge");
+
+        Edge<TNodeData, TEdgeData> edge = new(element, SVG)
+        {
+            Changed = SVG.UpdateInput,
+            GraphEditor = graphEditor,
+            Data = data,
+            From = from,
+            To = to
+        };
+        from.Edges.Add(edge);
+        to.Edges.Add(edge);
+
+        SVG.AddElement(edge);
+        return edge;
     }
 }

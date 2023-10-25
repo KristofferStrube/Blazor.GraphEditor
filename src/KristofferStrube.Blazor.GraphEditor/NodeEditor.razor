@@ -3,7 +3,10 @@
 @using KristofferStrube.Blazor.SVGEditor.Extensions
 @using KristofferStrube.Blazor.SVGEditor;
 @using Microsoft.AspNetCore.Components.Web;
-@inherits ShapeEditor<Node>
+
+@typeparam TNodeData
+@typeparam TEdgeData
+@inherits ShapeEditor<Node<TNodeData, TEdgeData>>
 
 <ContextMenuTrigger MenuId="SVGMenu" WrapperTag="g" Data=@SVGElement MouseButtonTrigger="SVGElement.ShouldTriggerContextMenu ? MouseButtonTrigger.Right : (MouseButtonTrigger)4">
     <g transform="translate(@SVGElement.SVG.Translate.x.AsString() @SVGElement.SVG.Translate.y.AsString()) scale(@SVGElement.SVG.Scale.AsString())">
@@ -34,7 +37,7 @@
 
     public new async Task SelectAsync(MouseEventArgs eventArgs)
     {
-        if (SVGElement.SVG.EditMode is EditMode.Add && SVGElement.SVG.SelectedShapes.Any(s => s is Edge))
+        if (SVGElement.SVG.EditMode is EditMode.Add && SVGElement.SVG.SelectedShapes.Any(s => s is Edge<TNodeData, TEdgeData>))
         {
             SVGElement.SVG.SelectedShapes.Add(SVGElement);
         }

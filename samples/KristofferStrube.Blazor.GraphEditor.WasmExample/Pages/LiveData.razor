@@ -1,0 +1,67 @@
+﻿@page "/LiveData"
+@implements IDisposable
+@using KristofferStrube.Blazor.GraphEditor
+
+<PageTitle>Blazor.GraphEditor - Live Data</PageTitle>
+
+<h1>Live Data</h1>
+
+<p>On this page we can animate some of the details of the nodes in the graph while we run the force directed layout.</p>
+
+<div style="height:70vh;">
+    <GraphEditor 
+        @ref=GraphEditor
+        TNode="Page"
+        TEdge="Transition"
+        NodeIdMapper="n => n.id"
+        NodeRepulsionMapper="n => n.Repulsion"
+                 NodeColorMapper=@(n => $"#{(int)(Math.Sin(n.ColorOffset)*100+150):X2}{(int)(Math.Sin(n.ColorOffset+Math.PI*2/3)*100+150):X2}{(int)(Math.Sin(n.ColorOffset+Math.PI*2/3*2)*100+150):X2}")
+        EdgeFromMapper="e => e.from"
+        EdgeToMapper="e => e.to"
+        EdgeWidthMapper="e => e.weight*5"
+        EdgeSpringConstantMapper="e => e.weight"
+        EdgeSpringLengthMapper="e => e.length * (1.5 + Math.Sin(edgeLengthSinAngle) / 2)"
+        />
+</div>
+
+@code {
+    private GraphEditor.GraphEditor<Page, Transition> GraphEditor = default!;
+    private bool running = true;
+
+    private double edgeLengthSinAngle = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        int nodeCount = 6;
+
+        var pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { ColorOffset = i * Math.PI * 2 / nodeCount }).ToList();
+        var edges = Enumerable.Range(0, nodeCount).Select(i => new Transition(pages[i % nodeCount], pages[(i + 1) % nodeCount], 1)).ToList();
+
+        await GraphEditor.LoadGraph(pages, edges);
+
+        while (running)
+        {
+            edgeLengthSinAngle = edgeLengthSinAngle + 0.01f % Math.PI * 2;
+            pages.ForEach(p => {
+                p.Repulsion = p.Repulsion < 10_000 ? p.Repulsion - 100 : 10_000;
+                p.ColorOffset = p.ColorOffset + 0.1 % (Math.PI * 2);
+            });
+            await GraphEditor.ForceDirectedLayout();
+            await Task.Delay(1);
+        }
+    }
+
+    public record Page(string id)
+    {
+        public double Repulsion { get; set; } = 10_000;
+        public double ColorOffset { get; set; }
+    }
+    public record Transition(Page from, Page to, float weight, float length = 200);
+
+    public void Dispose()
+    {
+        running = false;
+    }
+}

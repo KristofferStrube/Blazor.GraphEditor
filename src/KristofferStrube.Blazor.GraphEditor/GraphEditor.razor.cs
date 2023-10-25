@@ -7,7 +7,7 @@ namespace KristofferStrube.Blazor.GraphEditor;
 public partial class GraphEditor<TNode, TEdge> : ComponentBase
 {
     private GraphEditorCallbackContext callbackContext = default!;
-    private Node[] nodeElements = [];
+    private Node<TNode, TEdge>[] nodeElements = [];
     private string EdgeId(TEdge e)
     {
         return EdgeFromMapper(e) + "-" + EdgeToMapper(e);
@@ -26,10 +26,10 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
     public Func<TNode, double> NodeRepulsionMapper { get; set; } = _ => 800;
 
     [Parameter, EditorRequired]
-    public required Func<TEdge, string> EdgeFromMapper { get; set; }
+    public required Func<TEdge, TNode> EdgeFromMapper { get; set; }
 
     [Parameter, EditorRequired]
-    public required Func<TEdge, string> EdgeToMapper { get; set; }
+    public required Func<TEdge, TNode> EdgeToMapper { get; set; }
 
     [Parameter]
     public Func<TEdge, double> EdgeWidthMapper { get; set; } = _ => 1;
@@ -61,26 +61,32 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
     {
         Nodes = nodes.ToDictionary(n => NodeIdMapper(n), n => n);
         Edges = edges.ToDictionary(EdgeId, e => e);
-        StringBuilder sb = new();
-        foreach (TEdge edge in edges)
-        {
-            sb.Append(@$"<line data-elementtype=""edge"" stroke=""black"" stroke-width=""{EdgeWidthMapper(edge).AsString()}"" data-from=""{EdgeFromMapper(edge)}"" data-to=""{EdgeToMapper(edge)}""></line>");
-        }
+
+        Dictionary<TNode, Node<TNode, TEdge>> nodeDataHolders = [];
+
         foreach (TNode node in nodes)
         {
-            sb.Append(@$"<circle data-elementtype=""node"" r=""{NodeRadiusMapper(node)}"" cx=""{(200 + Random.Shared.NextDouble() * 20).AsString()}"" cy=""{(200 + Random.Shared.NextDouble() * 20).AsString()}"" stroke=""{NodeColorMapper(node)}"" id=""{NodeIdMapper(node)}""></circle>");
+            var dataHolder = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
+            dataHolder.Cx = 200 + Random.Shared.NextDouble() * 20;
+            dataHolder.Cy = 200 + Random.Shared.NextDouble() * 20;
+            nodeDataHolders.Add(node, dataHolder);
         }
-        Input = sb.ToString();
+        foreach (TEdge edge in edges)
+        {
+            SVGEditor.SelectedShapes.Add(Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeDataHolders[EdgeFromMapper(edge)], nodeDataHolders[EdgeToMapper(edge)]));
+        }
+        SVGEditor.MoveToBack();
+
         await Task.Yield();
         StateHasChanged();
-        nodeElements = SVGEditor.Elements.Where(e => e is Node).Select(e => (Node)e).ToArray();
+        nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
     }
 
     public Task ForceDirectedLayout()
     {
         for (int i = 0; i < nodeElements.Length; i++)
         {
-            Node node1 = nodeElements[i];
+            Node<TNode, TEdge> node1 = nodeElements[i];
             double mx = 0;
             double my = 0;
             for (int j = 0; j < nodeElements.Length; j++)
@@ -90,18 +96,14 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
                     continue;
                 }
 
-                Node node2 = nodeElements[j];
+                Node<TNode, TEdge> node2 = nodeElements[j];
                 double dx = node1.Cx - node2.Cx;
                 double dy = node1.Cy - node2.Cy;
                 double d = Math.Sqrt(dx * dx + dy * dy);
                 double force;
-                if (node1.Edges.FirstOrDefault(e => e.To == node2 || e.From == node2) is Edge { } e)
+                if (node1.Edges.FirstOrDefault(e => e.To == node2 || e.From == node2) is Edge<TNode, TEdge> { } e)
                 {
-                    if (!Edges.TryGetValue(node1.Id + "-" + node2.Id, out TEdge? edge))
-                    {
-                        Edges.TryGetValue(node2.Id + "-" + node1.Id, out edge);
-                    }
-                    force = EdgeSpringConstantMapper(edge!) * Math.Log(d / EdgeSpringLengthMapper(edge!));
+                    force = EdgeSpringConstantMapper(e.Data) * Math.Log(d / EdgeSpringLengthMapper(e.Data));
                 }
                 else
                 {
@@ -119,7 +121,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
             }
         }
 
-        foreach (Edge edge in SVGEditor.Elements.Where(e => e is Edge))
+        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
         {
             edge.UpdateLine();
         }
@@ -136,7 +138,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
 
     protected List<SupportedElement> SupportedElements { get; set; } = new()
     {
-        new(typeof(Node), element => element.TagName is "CIRCLE" && element.GetAttribute("data-elementtype") == "node"),
-        new(typeof(Edge), element => element.TagName is "LINE" && element.GetAttribute("data-elementtype") == "edge"),
+        new(typeof(Node<TNode, TEdge>), element => element.TagName is "CIRCLE" && element.GetAttribute("data-elementtype") == "node"),
+        new(typeof(Edge<TNode, TEdge>), element => element.TagName is "LINE" && element.GetAttribute("data-elementtype") == "edge"),
     };
 }

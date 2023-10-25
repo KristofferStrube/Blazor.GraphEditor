@@ -42,10 +42,11 @@ else
     {
         if (!firstRender) return;
 
-        await GraphEditor.LoadGraph(
-            new List<Page>() { new("1", "First nodes description."), new("2", "Second nodes description."), new("3", "Third nodes description."), new("4", "Fourth nodes description.") },
-            new List<Transition>() { new("1", "2", 1), new("2", "3", 1), new("3", "4", 1), new("4", "1", 1) }
-        );
+        var pages = new List<Page>() { new("1", "First nodes description."), new("2", "Second nodes description."), new("3", "Third nodes description."), new("4", "Fourth nodes description.") };
+
+        var edges = new List<Transition>() { new(pages[0], pages[1], 1), new(pages[1], pages[2], 1), new(pages[2], pages[3], 1), new(pages[3], pages[0], 1) };
+
+        await GraphEditor.LoadGraph(pages, edges);
 
         while (running)
         {
@@ -55,7 +56,7 @@ else
     }
 
     public record Page(string id, string description, string color = "#66BB6A", float size = 50);
-    public record Transition(string from, string to, float weight, float length = 200);
+    public record Transition(Page from, Page to, float weight, float length = 200);
 
     public void Dispose()
     {

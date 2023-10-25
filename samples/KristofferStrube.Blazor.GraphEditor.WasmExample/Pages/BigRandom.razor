@@ -36,16 +36,16 @@
             .ToList();
 
         List<Transition> transitions = new(15);
-        transitions.Add(new Transition("0", "1", Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
+        transitions.Add(new Transition(pages[0], pages[1], Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
 
         for (int i = 1; i < 15; i++)
         {
-            transitions.Add(new Transition(i.ToString(), transitions[Random.Shared.Next(i)].from, Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
+            transitions.Add(new Transition(pages[i], transitions[Random.Shared.Next(i)].from, Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
         }
 
         for (int i = 0; i < 3; i++)
         {
-            transitions.Add(new Transition(Random.Shared.Next(15).ToString(), Random.Shared.Next(15).ToString(), Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
+            transitions.Add(new Transition(pages[Random.Shared.Next(15)], pages[Random.Shared.Next(15)], Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
         }
         transitions = transitions.DistinctBy(t => t.from + "-" + t.to).ToList();
 
@@ -79,7 +79,7 @@
     }
 
     public record Page(string id, string color = "#66BB6A", double size = 50, double repulsion = 800);
-    public record Transition(string from, string to, double weight, double length = 200);
+    public record Transition(Page from, Page to, double weight, double length = 200);
 
     public void Dispose()
     {

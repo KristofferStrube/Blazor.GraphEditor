@@ -1,21 +1,23 @@
 ﻿using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
+using System.Text.Json;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
-public class Node : Circle
+public class Node<TNodeData, TEdgeData> : Circle
 {
     public Node(IElement element, SVGEditor.SVGEditor svg) : base(element, svg)
     {
-        string? id = element.GetAttribute("id");
-        if (id is null || svg.Elements.Any(e => e.Id == id))
-        {
-            Id = Guid.NewGuid().ToString();
-        }
+        GraphEditor = default!;
+        Data = default!;
     }
 
-    public override Type Presenter => typeof(NodeEditor);
+    public override Type Presenter => typeof(NodeEditor<TNodeData, TEdgeData>);
+
+    public GraphEditor<TNodeData, TEdgeData> GraphEditor { get; set; }
+
+    public TNodeData Data { get; set; }
 
     public override string Fill
     {
@@ -26,14 +28,18 @@ public class Node : Circle
         }
     }
 
-    public HashSet<Edge> Edges { get; } = new();
+    public override string Stroke => GraphEditor.NodeColorMapper(Data);
+
+    public new double R => GraphEditor.NodeRadiusMapper(Data);
+
+    public HashSet<Edge<TNodeData, TEdgeData>> Edges { get; } = new();
 
     public override void HandlePointerMove(PointerEventArgs eventArgs)
     {
         base.HandlePointerMove(eventArgs);
         if (SVG.EditMode is EditMode.Move)
         {
-            foreach (Edge edge in Edges)
+            foreach (Edge<TNodeData, TEdgeData> edge in Edges)
             {
                 edge.UpdateLine();
             }
@@ -42,28 +48,26 @@ public class Node : Circle
 
     public override void BeforeBeingRemoved()
     {
-        foreach (Edge edge in Edges)
+        foreach (Edge<TNodeData, TEdgeData> edge in Edges)
         {
             SVG.RemoveElement(edge);
         }
     }
 
-    public static new void AddNew(SVGEditor.SVGEditor SVG)
+    public static Node<TNodeData, TEdgeData> AddNew(SVGEditor.SVGEditor SVG, GraphEditor<TNodeData, TEdgeData> graphEditor, TNodeData data)
     {
         IElement element = SVG.Document.CreateElement("CIRCLE");
         element.SetAttribute("data-elementtype", "node");
 
-        Node node = new(element, SVG)
+        Node<TNodeData, TEdgeData> node = new(element, SVG)
         {
+            Id = graphEditor.NodeIdMapper(data),
             Changed = SVG.UpdateInput,
-            Stroke = "#28B6F6",
-            R = 50
+            GraphEditor = graphEditor,
+            Data = data
         };
 
-        (node.Cx, node.Cy) = SVG.LocalDetransform(SVG.LastRightClick);
-
-        SVG.ClearSelectedShapes();
-        SVG.SelectShape(node);
         SVG.AddElement(node);
+        return node;
     }
 }
