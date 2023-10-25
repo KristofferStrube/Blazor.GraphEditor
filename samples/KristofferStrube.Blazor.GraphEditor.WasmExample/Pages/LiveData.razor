@@ -68,7 +68,7 @@
         public double Repulsion { get; set; } = 10_000;
         public double ColorOffset { get; set; }
     }
-    public record Transition(Page from, Page to, float weight, float length = 200);
+    public record Transition(Page from, Page to, float weight, float length = 100);
 
     public void Dispose()
     {
