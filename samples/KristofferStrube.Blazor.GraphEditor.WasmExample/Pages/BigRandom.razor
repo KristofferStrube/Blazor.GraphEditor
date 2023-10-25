@@ -31,21 +31,21 @@
         if (!firstRender) return;
 
         List<Page> pages = Enumerable
-            .Range(0, 25)
+            .Range(0, 15)
             .Select(i => new Page(i.ToString(), RandomColor(), 50 + Random.Shared.Next(50), 2000 + Random.Shared.Next(2000)))
             .ToList();
 
-        List<Transition> transitions = new(25);
-        transitions.Add(new Transition(pages[0], pages[1], Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
+        List<Transition> transitions = new(15);
+        transitions.Add(new Transition(pages[0], pages[1], 1 + Random.Shared.NextDouble(), 200 + Random.Shared.Next(300)));
 
-        for (int i = 1; i < 25; i++)
+        for (int i = 1; i < 15; i++)
         {
             transitions.Add(new Transition(pages[i], transitions[Random.Shared.Next(i)].from, Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
         }
 
         for (int i = 0; i < 3; i++)
         {
-            transitions.Add(new Transition(pages[Random.Shared.Next(25)], pages[Random.Shared.Next(25)], Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
+            transitions.Add(new Transition(pages[Random.Shared.Next(15)], pages[Random.Shared.Next(15)], Random.Shared.NextDouble() * 2, 200 + Random.Shared.Next(300)));
         }
         transitions = transitions.DistinctBy(t => t.from + "-" + t.to).ToList();
 
@@ -60,22 +60,12 @@
 
     public string RandomColor()
     {
-        float red = 0;
-        float green = 0;
-        float blue = 0;
+        var random = Random.Shared.NextDouble() * Math.PI * 2;
 
-        while (Math.Abs(blue - green) + Math.Abs(blue - red) + Math.Abs(red - green) < 200)
-        {
-            red = Random.Shared.Next(0, 150);
-            green = Random.Shared.Next(0, 150);
-            blue = 225 - red - green;
-        }
-        if (blue > 150)
-        {
-            blue = 150;
-        }
-
-        return $"#{(int)(50 + red):X2}{(int)(50 + green):X2}{(int)(50 + blue):X2}";
+        var red = $"{(int)(Math.Sin(random) * 100 + 150):X2}";
+        var green = $"{(int)(Math.Sin(random + Math.PI * 2 / 3) * 100 + 150):X2}";
+        var blue = $"{(int)(Math.Sin(random + Math.PI * 2 / 3 * 2) * 100 + 150):X2}";
+        return $"#{red}{green}{blue}";
     }
 
     public record Page(string id, string color = "#66BB6A", double size = 50, double repulsion = 800);
