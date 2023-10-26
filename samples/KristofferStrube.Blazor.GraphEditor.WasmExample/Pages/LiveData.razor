@@ -34,17 +34,18 @@
 
         int nodeCount = 8;
 
-        var pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { ColorOffset = i * Math.PI * 2 / nodeCount }).ToList();
+        var pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { BaseOffset = i * Math.PI * 2 / nodeCount }).ToList();
         var edges = Enumerable.Range(0, nodeCount).Select(i => new Transition(pages[i % nodeCount], pages[(i + 1) % nodeCount], 1)).ToList();
 
         await GraphEditor.LoadGraph(pages, edges);
 
         while (running)
         {
-            edgeLengthSinAngle = edgeLengthSinAngle + 0.01f % Math.PI * 2;
+            double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+            edgeLengthSinAngle = unixTimeSeconds % Math.PI * 2;
             pages.ForEach(p =>
             {
-                p.ColorOffset = p.ColorOffset + 0.01 % (Math.PI * 2);
+                p.Radians = p.BaseOffset + unixTimeSeconds % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
             await Task.Delay(1);
@@ -53,9 +54,9 @@
 
     string ColorMapper(Page page)
     {
-        var red = $"{(int)(Math.Sin(page.ColorOffset) * 100 + 150):X2}";
-        var green = $"{(int)(Math.Sin(page.ColorOffset + Math.PI * 2 / 3) * 100 + 150):X2}";
-        var blue = $"{(int)(Math.Sin(page.ColorOffset + Math.PI * 2 / 3 * 2) * 100 + 150):X2}";
+        var red = $"{(int)(Math.Sin(page.Radians) * 100 + 150):X2}";
+        var green = $"{(int)(Math.Sin(page.Radians + Math.PI * 2 / 3) * 100 + 150):X2}";
+        var blue = $"{(int)(Math.Sin(page.Radians + Math.PI * 2 / 3 * 2) * 100 + 150):X2}";
         return $"#{red}{green}{blue}";
     }
 
@@ -63,7 +64,8 @@
 
     public record Page(string id)
     {
-        public double ColorOffset { get; set; }
+        public double BaseOffset { get; set; }
+        public double Radians { get; set; }
     }
     public record Transition(Page from, Page to, float weight, float length = 100);
 

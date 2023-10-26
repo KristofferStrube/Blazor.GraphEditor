@@ -1,7 +1,6 @@
 ﻿using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
-using System.Text.Json;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -29,6 +28,8 @@ public class Node<TNodeData, TEdgeData> : Circle
     }
 
     public override string Stroke => GraphEditor.NodeColorMapper(Data);
+
+    public override string StateRepresentation => base.StateRepresentation + Stroke;
 
     public new double R => GraphEditor.NodeRadiusMapper(Data);
 

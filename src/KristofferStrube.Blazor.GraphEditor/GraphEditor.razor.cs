@@ -1,6 +1,5 @@
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components;
-using System.Text;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -59,14 +58,14 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
 
     public async Task LoadGraph(List<TNode> nodes, List<TEdge> edges)
     {
-        Nodes = nodes.ToDictionary(n => NodeIdMapper(n), n => n);
+        Nodes = nodes.ToDictionary(NodeIdMapper, n => n);
         Edges = edges.ToDictionary(EdgeId, e => e);
 
         Dictionary<TNode, Node<TNode, TEdge>> nodeDataHolders = [];
 
         foreach (TNode node in nodes)
         {
-            var dataHolder = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
+            Node<TNode, TEdge> dataHolder = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
             dataHolder.Cx = 200 + Random.Shared.NextDouble() * 20;
             dataHolder.Cy = 200 + Random.Shared.NextDouble() * 20;
             nodeDataHolders.Add(node, dataHolder);
