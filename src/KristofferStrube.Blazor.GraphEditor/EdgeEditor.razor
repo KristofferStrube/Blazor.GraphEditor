@@ -4,7 +4,7 @@
 @using KristofferStrube.Blazor.SVGEditor;
 @using Microsoft.AspNetCore.Components.Web
 
-@typeparam TNodeData
+@typeparam TNodeData where TNodeData : IEquatable<TNodeData>
 @typeparam TEdgeData
 @inherits ShapeEditor<Edge<TNodeData, TEdgeData>>
 

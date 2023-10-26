@@ -1,9 +1,11 @@
+using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components;
+using System.Xml.Linq;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
-public partial class GraphEditor<TNode, TEdge> : ComponentBase
+public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEquatable<TNode>
 {
     private GraphEditorCallbackContext callbackContext = default!;
     private Node<TNode, TEdge>[] nodeElements = [];
@@ -58,21 +60,23 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
 
     public async Task LoadGraph(List<TNode> nodes, List<TEdge> edges)
     {
+        SVGEditor.Translate = (200, 200);
+
         Nodes = nodes.ToDictionary(NodeIdMapper, n => n);
         Edges = edges.ToDictionary(EdgeId, e => e);
 
-        Dictionary<TNode, Node<TNode, TEdge>> nodeDataHolders = [];
+        Dictionary<TNode, Node<TNode, TEdge>> nodeElementDictionary = [];
 
         foreach (TNode node in nodes)
         {
-            Node<TNode, TEdge> dataHolder = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
-            dataHolder.Cx = 200 + Random.Shared.NextDouble() * 20;
-            dataHolder.Cy = 200 + Random.Shared.NextDouble() * 20;
-            nodeDataHolders.Add(node, dataHolder);
+            Node<TNode, TEdge> element = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
+            element.Cx = Random.Shared.NextDouble() * 20;
+            element.Cy = Random.Shared.NextDouble() * 20;
+            nodeElementDictionary.Add(node, element);
         }
         foreach (TEdge edge in edges)
         {
-            SVGEditor.SelectedShapes.Add(Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeDataHolders[EdgeFromMapper(edge)], nodeDataHolders[EdgeToMapper(edge)]));
+            SVGEditor.SelectedShapes.Add(Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeElementDictionary[EdgeFromMapper(edge)], nodeElementDictionary[EdgeToMapper(edge)]));
         }
         SVGEditor.MoveToBack();
 
@@ -80,6 +84,93 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase
         StateHasChanged();
         nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
     }
+
+
+    public async Task UpdateGraph(List<TNode> nodes, List<TEdge> edges)
+    {
+        Dictionary<TNode, Node<TNode, TEdge>> newNodeElementDictionary = [];
+
+        foreach (TNode node in nodes)
+        {
+            if (!Nodes.ContainsKey(NodeIdMapper(node)))
+            {
+                Node<TNode, TEdge> element = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
+                newNodeElementDictionary.Add(node, element);
+                Nodes.Add(NodeIdMapper(node), node);
+            }
+        }
+        nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
+        var copyOfSelectShapes = SVGEditor.SelectedShapes.ToList();
+        SVGEditor.ClearSelectedShapes();
+        foreach (TEdge edge in edges)
+        {
+            if (!Edges.ContainsKey(EdgeId(edge)))
+            {
+                SVGEditor.SelectedShapes.Add(Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeElements.First(n => n.Data.Equals(EdgeFromMapper(edge))), nodeElements.First(n => n.Data.Equals(EdgeToMapper(edge)))));
+                Edges.Add(EdgeId(edge), edge);
+            }
+        }
+        SVGEditor.MoveToBack();
+        SVGEditor.SelectedShapes = copyOfSelectShapes;
+        foreach (var newNodeElement in newNodeElementDictionary.Values)
+        {
+            if (newNodeElement.Edges.Count is 0)
+            {
+                newNodeElement.Cx = Random.Shared.NextDouble() * 20;
+                newNodeElement.Cy = Random.Shared.NextDouble() * 20;
+            }
+            else if (newNodeElement.Edges.Count is 1)
+            {
+                var singleEdge = newNodeElement.Edges.Single();
+                var neighborNode = singleEdge.From == newNodeElement ? singleEdge.To : singleEdge.From;
+                var neighborsNeighbors = neighborNode.Edges.Select(e => e.From == neighborNode ? e.To : e.From).Where(n => n != newNodeElement).ToArray();
+
+                var edgeLength = EdgeSpringLengthMapper(singleEdge.Data);
+
+                if (neighborsNeighbors.Length is 0)
+                {
+                    var randomAngle = neighborNode.Cx + Random.Shared.NextDouble() * Math.PI;
+                    newNodeElement.Cx = neighborNode.Cx + Math.Sin(randomAngle) * edgeLength;
+                    newNodeElement.Cy = neighborNode.Cy + Math.Cos(randomAngle) * edgeLength;
+                }
+                else
+                {
+                    double averageXPositionOfNeighborsNeighbors = 0;
+                    double averageYPositionOfNeighborsNeighbors = 0;
+
+                    foreach (var neighborsNeighborNode in neighborsNeighbors)
+                    {
+                        averageXPositionOfNeighborsNeighbors += neighborsNeighborNode.Cx / neighborsNeighbors.Length;
+                        averageYPositionOfNeighborsNeighbors += neighborsNeighborNode.Cy / neighborsNeighbors.Length;
+                    }
+                    // TODO: Handle the case where averagePositionOfNeighborsNeighbors==neighborsPosition;
+                    var differenceBetweenAverageNeighborsNeighborsAndNeighbor = (
+                        x: averageXPositionOfNeighborsNeighbors - neighborNode.Cx,
+                        y: averageYPositionOfNeighborsNeighbors - neighborNode.Cy
+                    );
+                    var distanceBetweenAverageNeighborsNeighborsAndNeighbor = Math.Sqrt(Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.x, 2) + Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.y, 2));
+                    var normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor = (
+                        x: differenceBetweenAverageNeighborsNeighborsAndNeighbor.x / distanceBetweenAverageNeighborsNeighborsAndNeighbor,
+                        y: differenceBetweenAverageNeighborsNeighborsAndNeighbor.y / distanceBetweenAverageNeighborsNeighborsAndNeighbor
+                    );
+
+                    newNodeElement.Cx = neighborNode.Cx - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.x * edgeLength;
+                    newNodeElement.Cy = neighborNode.Cy - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.y * edgeLength;
+                }
+            }
+            else
+            {
+                foreach (var edge in newNodeElement.Edges)
+                {
+
+                }
+            }
+        }
+
+        await Task.Yield();
+        StateHasChanged();
+    }
+
 
     public Task ForceDirectedLayout()
     {

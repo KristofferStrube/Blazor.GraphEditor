@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
-public class Edge<TNodeData, TEdgeData> : Line
+public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNodeData>
 {
     public Edge(IElement element, SVGEditor.SVGEditor svg) : base(element, svg)
     {

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
-public class Node<TNodeData, TEdgeData> : Circle
+public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TNodeData>
 {
     public Node(IElement element, SVGEditor.SVGEditor svg) : base(element, svg)
     {
