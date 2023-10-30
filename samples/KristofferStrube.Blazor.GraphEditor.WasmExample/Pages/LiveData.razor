@@ -68,7 +68,7 @@
 
     public async Task AddNode()
     {
-        pages.Add(new Page(nodeCount++.ToString()));
+        pages.Add(new Page(nodeCount++.ToString()) { BaseOffset = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0 });
         transitions.Add(new Transition(pages[^2], pages[^1], 1, 200));
         await GraphEditor.UpdateGraph(pages, transitions);
     }

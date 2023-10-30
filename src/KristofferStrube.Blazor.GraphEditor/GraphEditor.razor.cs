@@ -191,13 +191,13 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
                 double dy = node1.Cy - node2.Cy;
                 double d = Math.Sqrt(dx * dx + dy * dy);
                 double force;
-                if (node1.Edges.FirstOrDefault(e => e.To == node2 || e.From == node2) is Edge<TNode, TEdge> { } e)
+                if (node1.NeighborNodes.TryGetValue(node2, out var edge))
                 {
-                    force = EdgeSpringConstantMapper(e.Data) * Math.Log(d / EdgeSpringLengthMapper(e.Data));
+                    force = EdgeSpringConstantMapper(edge.Data) * Math.Log(d / EdgeSpringLengthMapper(edge.Data));
                 }
                 else
                 {
-                    force = -(NodeRepulsionMapper(Nodes[node1.Id!]) + NodeRepulsionMapper(Nodes[node2.Id!])) / 2 / (d * d);
+                    force = -(NodeRepulsionMapper(node1.Data) + NodeRepulsionMapper(node2.Data)) / 2 / (d * d);
                 }
 
                 mx -= dx * 0.1 * force;

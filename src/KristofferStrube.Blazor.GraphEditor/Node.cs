@@ -27,6 +27,8 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
         }
     }
 
+    public override string? Id { get; set; }
+
     public override string Stroke => GraphEditor.NodeColorMapper(Data);
 
     public override string StateRepresentation => base.StateRepresentation + Stroke;
@@ -34,6 +36,8 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
     public new double R => GraphEditor.NodeRadiusMapper(Data);
 
     public HashSet<Edge<TNodeData, TEdgeData>> Edges { get; } = new();
+
+    public Dictionary<Node<TNodeData, TEdgeData>, Edge<TNodeData, TEdgeData>> NeighborNodes { get; } = new();
 
     public override void HandlePointerMove(PointerEventArgs eventArgs)
     {
@@ -70,5 +74,20 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
 
         SVG.AddElement(node);
         return node;
+    }
+
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Node<TNodeData, TEdgeData> node && Equals(node);
+    }
+
+    public bool Equals(Node<TNodeData, TEdgeData> obj)
+    {
+        return obj.Id?.Equals(Id) ?? false;
     }
 }
