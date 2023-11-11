@@ -11,7 +11,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     private Node<TNode, TEdge>[] nodeElements = [];
     private string EdgeId(TEdge e)
     {
-        return EdgeFromMapper(e) + "-" + EdgeToMapper(e);
+        return NodeIdMapper(EdgeFromMapper(e)) + "-" + NodeIdMapper(EdgeToMapper(e));
     }
 
     [Parameter, EditorRequired]
