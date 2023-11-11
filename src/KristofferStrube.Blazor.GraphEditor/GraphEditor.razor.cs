@@ -162,9 +162,13 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
             {
                 foreach (var edge in newNodeElement.Edges)
                 {
-
                 }
             }
+        }
+
+        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
+        {
+            edge.UpdateLine();
         }
 
         await Task.Yield();
