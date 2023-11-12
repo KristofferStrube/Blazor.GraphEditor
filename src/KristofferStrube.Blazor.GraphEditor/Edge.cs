@@ -1,6 +1,7 @@
 ﻿using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
+using System.Xml.Linq;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -86,7 +87,7 @@ public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNod
         double differenceY = To.Cy - From.Cy;
         double distance = Math.Sqrt((differenceX * differenceX) + (differenceY * differenceY));
 
-        if (distance < To.R + From.R)
+        if (distance < To.R + From.R + GraphEditor.EdgeWidthMapper(Data) * 3)
         {
             (X1, Y1) = (X2, Y2);
         }
@@ -110,6 +111,7 @@ public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNod
 
         Edge<TNodeData, TEdgeData> edge = new(element, SVG)
         {
+            Id = graphEditor.NodeIdMapper(from.Data) + "-" + graphEditor.NodeIdMapper(to.Data),
             Changed = SVG.UpdateInput,
             GraphEditor = graphEditor,
             Data = data,
@@ -121,7 +123,7 @@ public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNod
         from.NeighborNodes[to] = edge;
         to.NeighborNodes[from] = edge;
 
-        SVG.AddElement(edge);
+        SVG.Elements.Add(edge);
         return edge;
     }
 }

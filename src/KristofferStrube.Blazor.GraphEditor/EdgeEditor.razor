@@ -8,7 +8,7 @@
 @typeparam TEdgeData
 @inherits ShapeEditor<Edge<TNodeData, TEdgeData>>
 
-<ContextMenuTrigger MenuId="SVGMenu" WrapperTag="g" Data=@SVGElement MouseButtonTrigger="SVGElement.ShouldTriggerContextMenu ? MouseButtonTrigger.Right : (MouseButtonTrigger)4">
+<ContextMenuTrigger @key=SVGElement.Id MenuId="SVGMenu" WrapperTag="g" Data=@SVGElement MouseButtonTrigger="SVGElement.ShouldTriggerContextMenu ? MouseButtonTrigger.Right : (MouseButtonTrigger)4">
     <g style="@(SVGElement.SVG.EditMode is EditMode.Add ? "pointer-events:none;" : "")" transform="translate(@SVGElement.SVG.Translate.x.AsString() @SVGElement.SVG.Translate.y.AsString()) scale(@SVGElement.SVG.Scale.AsString())">
         <line @ref=ElementReference
               @onfocusin="FocusElement"

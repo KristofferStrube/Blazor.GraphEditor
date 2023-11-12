@@ -76,9 +76,8 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         }
         foreach (TEdge edge in edges)
         {
-            SVGEditor.SelectedShapes.Add(Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeElementDictionary[EdgeFromMapper(edge)], nodeElementDictionary[EdgeToMapper(edge)]));
+            Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeElementDictionary[EdgeFromMapper(edge)], nodeElementDictionary[EdgeToMapper(edge)]);
         }
-        SVGEditor.MoveToBack();
 
         await Task.Yield();
         StateHasChanged();
@@ -94,24 +93,23 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         {
             if (!Nodes.ContainsKey(NodeIdMapper(node)))
             {
-                Node<TNode, TEdge> element = Node<TNode, TEdge>.AddNew(SVGEditor, this, node);
+                Node<TNode, TEdge> element = Node<TNode, TEdge>.CreateNew(SVGEditor, this, node);
                 newNodeElementDictionary.Add(node, element);
                 Nodes.Add(NodeIdMapper(node), node);
             }
         }
-        nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
-        var copyOfSelectShapes = SVGEditor.SelectedShapes.ToList();
-        SVGEditor.ClearSelectedShapes();
         foreach (TEdge edge in edges)
         {
             if (!Edges.ContainsKey(EdgeId(edge)))
             {
-                SVGEditor.SelectedShapes.Add(Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeElements.First(n => n.Data.Equals(EdgeFromMapper(edge))), nodeElements.First(n => n.Data.Equals(EdgeToMapper(edge)))));
+                TNode from = EdgeFromMapper(edge);
+                TNode to = EdgeToMapper(edge);
+                Node<TNode, TEdge> fromElement = newNodeElementDictionary.TryGetValue(from, out var eFrom) ? eFrom : nodeElements.First(n => n.Data.Equals(from));
+                Node<TNode, TEdge> toElement = newNodeElementDictionary.TryGetValue(to, out var eTo) ? eTo : nodeElements.First(n => n.Data.Equals(to));
+                Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, fromElement, toElement);
                 Edges.Add(EdgeId(edge), edge);
             }
         }
-        SVGEditor.MoveToBack();
-        SVGEditor.SelectedShapes = copyOfSelectShapes;
         foreach (var newNodeElement in newNodeElementDictionary.Values)
         {
             if (newNodeElement.Edges.Count is 0)
@@ -119,9 +117,9 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
                 newNodeElement.Cx = Random.Shared.NextDouble() * 20;
                 newNodeElement.Cy = Random.Shared.NextDouble() * 20;
             }
-            else if (newNodeElement.Edges.Count is 1)
+            else // TODO: We should handle all edges not just the first
             {
-                var singleEdge = newNodeElement.Edges.Single();
+                var singleEdge = newNodeElement.Edges.First();
                 var neighborNode = singleEdge.From == newNodeElement ? singleEdge.To : singleEdge.From;
                 var neighborsNeighbors = neighborNode.Edges.Select(e => e.From == neighborNode ? e.To : e.From).Where(n => n != newNodeElement).ToArray();
 
@@ -158,21 +156,14 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
                     newNodeElement.Cy = neighborNode.Cy - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.y * edgeLength;
                 }
             }
-            else
-            {
-                foreach (var edge in newNodeElement.Edges)
-                {
-                }
-            }
+            SVGEditor.AddElement(newNodeElement);
         }
+        nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
 
         foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
         {
             edge.UpdateLine();
         }
-
-        await Task.Yield();
-        StateHasChanged();
     }
 
 

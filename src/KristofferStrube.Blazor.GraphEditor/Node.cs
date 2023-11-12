@@ -1,6 +1,8 @@
 ﻿using AngleSharp.Dom;
+using AngleSharp.Svg.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
+using System.Xml.Linq;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -67,12 +69,29 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
         Node<TNodeData, TEdgeData> node = new(element, SVG)
         {
             Id = graphEditor.NodeIdMapper(data),
-            Changed = SVG.UpdateInput,
+            Changed = null,
             GraphEditor = graphEditor,
             Data = data
         };
 
-        SVG.AddElement(node);
+        SVG.Elements.Add(node);
+        SVG.Document.GetElementsByTagName("BODY")[0].AppendElement(element);
+        return node;
+    }
+
+    public static Node<TNodeData, TEdgeData> CreateNew(SVGEditor.SVGEditor SVG, GraphEditor<TNodeData, TEdgeData> graphEditor, TNodeData data)
+    {
+        IElement element = SVG.Document.CreateElement("CIRCLE");
+        element.SetAttribute("data-elementtype", "node");
+
+        Node<TNodeData, TEdgeData> node = new(element, SVG)
+        {
+            Id = graphEditor.NodeIdMapper(data),
+            Changed = null,
+            GraphEditor = graphEditor,
+            Data = data
+        };
+
         return node;
     }
 
