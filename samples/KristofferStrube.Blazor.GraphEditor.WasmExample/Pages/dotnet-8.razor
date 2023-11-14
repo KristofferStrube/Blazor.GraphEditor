@@ -1,0 +1,104 @@
+﻿@page "/Dotnet-8"
+@implements IDisposable
+@using KristofferStrube.Blazor.GraphEditor
+
+<PageTitle>Blazor.GraphEditor - Live Data</PageTitle>
+
+<h1>.NET 8</h1>
+<div style="height:70vh;">
+    <GraphEditor @ref=GraphEditor
+                 TNode="Page"
+                 TEdge="Transition"
+                 NodeIdMapper="n => n.id"
+                 NodeColorMapper=ColorMapper
+                 NodeRepulsionMapper="n => n.Repulsion"
+                 EdgeFromMapper="e => e.from"
+                 EdgeToMapper="e => e.to"
+                 EdgeWidthMapper="e => 5"
+                 EdgeSpringLengthMapper="e => e.length"
+                 EdgeSpringConstantMapper="_ => 2"/>
+</div>
+
+@code {
+    private List<Page> pages = new();
+    private List<Transition> transitions = new();
+
+    private GraphEditor.GraphEditor<Page, Transition> GraphEditor = default!;
+    private bool running = true;
+
+    private double edgeLengthSinAngle = 0;
+    int nodeCount = 11;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+
+        pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { BaseOffset = i * Math.PI * 2 / nodeCount }).ToList();
+        pages[0].Repulsion = 0;
+        pages[1].Repulsion = 16000;
+        pages[5].Repulsion = 16000;
+        pages[6].Repulsion = 16000;
+        pages[10].Repulsion = 16000;
+        transitions = new()
+        {
+            new (pages[0], pages[1], 1),
+            new (pages[1], pages[2], 1),
+            new (pages[2], pages[3], 1),
+            new (pages[3], pages[4], 1),
+            new (pages[4], pages[5], 1),
+            new (pages[5], pages[0], 1),
+            new (pages[0], pages[6], 1),
+            new (pages[6], pages[7], 1),
+            new (pages[7], pages[8], 1),
+            new (pages[8], pages[9], 1),
+            new (pages[9], pages[10], 1),
+            new (pages[10], pages[0], 1),
+        };
+
+        await GraphEditor.LoadGraph(pages, transitions);
+
+        while (running)
+        {
+            double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+            edgeLengthSinAngle = unixTimeSeconds % Math.PI * 2;
+            pages.ForEach(p =>
+            {
+                p.Radians = p.BaseOffset + (unixTimeSeconds * 2) % (Math.PI * 2);
+            });
+            await GraphEditor.ForceDirectedLayout();
+            await Task.Delay(1);
+        }
+    }
+
+    string ColorMapper(Page page)
+    {
+        var red = $"{(int)(Math.Sin(page.Radians * 2) * 70 + 70):X2}";
+        var green = $"{0:X2}";
+        var blue = $"{200:X2}";
+        return $"#{red}{green}{blue}";
+    }
+
+
+    public async Task AddNode()
+    {
+        pages.Add(new Page(nodeCount++.ToString()) { BaseOffset = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0 });
+        transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
+        await GraphEditor.UpdateGraph(pages, transitions);
+    }
+
+    double EdgeLengthMapper(Transition edge) => edge.length * (1.5 + Math.Sin(edgeLengthSinAngle) / 2);
+
+    public record Page(string id)
+    {
+        public double BaseOffset { get; set; }
+        public double Radians { get; set; }
+        public double Repulsion { get; set; } = 8000;
+    }
+    public record Transition(Page from, Page to, float weight, float length = 100);
+
+    public void Dispose()
+    {
+        running = false;
+    }
+}
