@@ -215,7 +215,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         return Task.CompletedTask;
     }
 
-    public void FitToShapes(double delta = 1, double padding = 50)
+    public void FitToShapes(double delta = 1, double padding = 20)
     {
         if (SVGEditor.BBox is null || SVGEditor.SelectedShapes.Count > 0) return;
         double lowerX = double.MaxValue, lowerY = double.MaxValue;
