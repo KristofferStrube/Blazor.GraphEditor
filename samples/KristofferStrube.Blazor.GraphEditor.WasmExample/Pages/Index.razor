@@ -29,6 +29,10 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+        while (!GraphEditor.IsReadyToLoad)
+        {
+            await Task.Delay(50);
+        }
 
         var pages = new List<Page>() { new("1", size: 60), new("2", "#3333AA"), new("3", "#AA33AA"), new("4", "#AA3333"), new("5", "#AAAA33"), new("6", "#33AAAA"), new("7"), new("8") };
 
@@ -43,9 +47,17 @@
 
         await GraphEditor.LoadGraph(pages, edges);
 
+        double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+        double startUnixTimeSeconds = prevUnixTimeSeconds;
         while (running)
         {
             await GraphEditor.ForceDirectedLayout();
+            double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+            if (unixTimeSeconds - startUnixTimeSeconds < 7)
+            {
+                GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 100);
+                prevUnixTimeSeconds = unixTimeSeconds;
+            }
             await Task.Delay(1);
         }
     }

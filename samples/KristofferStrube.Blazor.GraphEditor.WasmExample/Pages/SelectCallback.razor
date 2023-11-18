@@ -41,6 +41,10 @@ else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+        while (!GraphEditor.IsReadyToLoad)
+        {
+            await Task.Delay(50);
+        }
 
         var pages = new List<Page>() { new("1", "First nodes description."), new("2", "Second nodes description."), new("3", "Third nodes description."), new("4", "Fourth nodes description.") };
 
@@ -48,9 +52,17 @@ else
 
         await GraphEditor.LoadGraph(pages, edges);
 
+        double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+        double startUnixTimeSeconds = prevUnixTimeSeconds;
         while (running)
         {
             await GraphEditor.ForceDirectedLayout();
+            double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+            if (unixTimeSeconds - startUnixTimeSeconds < 3)
+            {
+                GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 50);
+                prevUnixTimeSeconds = unixTimeSeconds;
+            }
             await Task.Delay(1);
         }
     }

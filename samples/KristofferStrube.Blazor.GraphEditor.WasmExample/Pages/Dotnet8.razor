@@ -32,7 +32,10 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-
+        while (!GraphEditor.IsReadyToLoad)
+        {
+            await Task.Delay(50);
+        }
 
         pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { BaseOffset = i * Math.PI * 2 / nodeCount }).ToList();
         pages[0].Repulsion = 0;
@@ -58,6 +61,7 @@
 
         await GraphEditor.LoadGraph(pages, transitions);
 
+        double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
         while (running)
         {
             double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
@@ -67,6 +71,8 @@
                 p.Radians = p.BaseOffset + (unixTimeSeconds * 2) % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
+            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 4, 1));
+            prevUnixTimeSeconds = unixTimeSeconds;
             await Task.Delay(1);
         }
     }

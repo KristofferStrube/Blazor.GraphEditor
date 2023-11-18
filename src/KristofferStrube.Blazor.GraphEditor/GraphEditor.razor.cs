@@ -46,6 +46,8 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter]
     public Func<TNode, Task>? NodeSelectionCallback { get; set; }
 
+    public bool IsReadyToLoad => !(SVGEditor.BBox is null);
+
     protected override void OnInitialized()
     {
         callbackContext = new()
@@ -62,7 +64,14 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
 
     public async Task LoadGraph(List<TNode> nodes, List<TEdge> edges)
     {
-        SVGEditor.Translate = (200, 200);
+        if (SVGEditor.BBox is not null)
+        {
+            SVGEditor.Translate = (SVGEditor.BBox.Width / 2, SVGEditor.BBox.Height / 2);
+        }
+        else
+        {
+            SVGEditor.Translate = (200, 200);
+        }
 
         Nodes = nodes.ToDictionary(NodeIdMapper, n => n);
         Edges = edges.ToDictionary(EdgeId, e => e);
@@ -80,6 +89,10 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         {
             Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, nodeElementDictionary[EdgeFromMapper(edge)], nodeElementDictionary[EdgeToMapper(edge)]);
         }
+
+        SVGEditor.SelectedShapes = SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Select(e => (Shape)e).ToList();
+        SVGEditor.MoveToBack();
+        SVGEditor.ClearSelectedShapes();
 
         await Task.Yield();
         StateHasChanged();

@@ -37,7 +37,10 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-
+        while (!GraphEditor.IsReadyToLoad)
+        {
+            await Task.Delay(50);
+        }
 
         pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { BaseOffset = i * Math.PI * 2 / nodeCount }).ToList();
         transitions = Enumerable.Range(0, nodeCount).Select(i => new Transition(pages[i % nodeCount], pages[(i + 1) % nodeCount], 1)).ToList();
