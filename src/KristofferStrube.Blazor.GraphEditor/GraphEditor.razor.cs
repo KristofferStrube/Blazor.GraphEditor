@@ -2,6 +2,7 @@ using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components;
 using System.Xml.Linq;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -213,6 +214,29 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         return Task.CompletedTask;
     }
 
+    public void FitToShapes(double delta = 1, double padding = 50)
+    {
+        if (SVGEditor.BBox is null || SVGEditor.SelectedShapes.Count > 0) return;
+        double lowerX = double.MaxValue, lowerY = double.MaxValue;
+        double upperX = double.MinValue, upperY = double.MinValue;
+        foreach (Shape shape in SVGEditor.Elements)
+        {
+            foreach ((double x, double y) in shape.SelectionPoints)
+            {
+                double strokeWidth = double.TryParse(shape.StrokeWidth, out double result) ? result : 0;
+                lowerX = Math.Min(x - strokeWidth, lowerX);
+                upperX = Math.Max(x + strokeWidth, upperX);
+                lowerY = Math.Min(y - strokeWidth, lowerY);
+                upperY = Math.Max(y + strokeWidth, upperY);
+            }
+        }
+        double elementsWidth = upperX - lowerX;
+        double elementsHeight = upperY - lowerY;
+        var newScale = Math.Min(SVGEditor.BBox.Width / (elementsWidth + (padding * 2)), SVGEditor.BBox.Height / (elementsHeight + (padding * 2)));
+        (double x, double y) newTranslate = ((SVGEditor.BBox.Width / 2) - ((lowerX + (elementsWidth / 2)) * newScale), (SVGEditor.BBox.Height / 2) - ((lowerY + (elementsHeight / 2)) * newScale));
+        SVGEditor.Scale = (SVGEditor.Scale * (1 - delta) + newScale * delta);
+        SVGEditor.Translate = (SVGEditor.Translate.x * (1 - delta) + newTranslate.x * delta, SVGEditor.Translate.y * (1 - delta) + newTranslate.y * delta);
+    }
     protected Dictionary<string, TNode> Nodes { get; set; } = new();
 
     protected Dictionary<string, TEdge> Edges { get; set; } = new();

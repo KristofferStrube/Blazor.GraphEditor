@@ -1,8 +1,6 @@
 ﻿using AngleSharp.Dom;
-using AngleSharp.Svg.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
-using System.Xml.Linq;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -35,7 +33,18 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
 
     public override string StateRepresentation => base.StateRepresentation + Stroke;
 
-    public new double R => GraphEditor.NodeRadiusMapper(Data);
+    private double r;
+    public new double R { 
+        get {
+            var currentRadius = GraphEditor.NodeRadiusMapper(Data);
+            if (currentRadius != r)
+            {
+                base.R = currentRadius;
+                r = currentRadius;
+            }
+            return currentRadius;
+        }
+    }
 
     public HashSet<Edge<TNodeData, TEdgeData>> Edges { get; } = new();
 

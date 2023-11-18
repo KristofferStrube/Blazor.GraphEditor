@@ -44,6 +44,7 @@
 
         await GraphEditor.LoadGraph(pages, transitions);
 
+        double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
         while (running)
         {
             double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
@@ -53,6 +54,8 @@
                 p.Radians = p.BaseOffset + unixTimeSeconds % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
+            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1));
+            prevUnixTimeSeconds = unixTimeSeconds;
             await Task.Delay(1);
         }
     }
