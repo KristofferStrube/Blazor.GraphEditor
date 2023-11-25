@@ -54,7 +54,7 @@
         transitions = transitions.DistinctBy(t => t.from + "-" + t.to).ToList();
 
         await GraphEditor.LoadGraph(pages, transitions);
-        GraphEditor.FitToShapes(delta: 1);
+        GraphEditor.FitToShapes(delta: 1, 200);
         GraphEditor.MoveEdgesToBack();
 
         double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
@@ -62,7 +62,7 @@
         {
             await GraphEditor.ForceDirectedLayout();
             double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
-            GraphEditor.FitToShapes(delta: 1);
+            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 4, 1));
             prevUnixTimeSeconds = unixTimeSeconds;
             await Task.Delay(1);
         }
