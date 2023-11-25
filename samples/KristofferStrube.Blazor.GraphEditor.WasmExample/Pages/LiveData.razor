@@ -57,7 +57,7 @@
                 p.Radians = p.BaseOffset + unixTimeSeconds % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
-            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1));
+            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), 50);
             prevUnixTimeSeconds = unixTimeSeconds;
             await Task.Delay(1);
         }
@@ -76,6 +76,14 @@
     {
         pages.Add(new Page(nodeCount++.ToString()) { BaseOffset = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0 });
         transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
+        if (Random.Shared.NextDouble() < 0.07)
+        {
+            transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
+        }
+        if (Random.Shared.NextDouble() < 0.07)
+        {
+            transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
+        }
         await GraphEditor.UpdateGraph(pages, transitions);
     }
 

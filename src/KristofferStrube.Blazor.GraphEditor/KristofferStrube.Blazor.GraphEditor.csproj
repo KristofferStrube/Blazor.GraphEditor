@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="KristofferStrube.Blazor.SVGEditor" Version="0.2.0" />
+    <PackageReference Include="KristofferStrube.Blazor.SVGEditor" Version="0.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.8" />
   </ItemGroup>
 

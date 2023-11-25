@@ -46,7 +46,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter]
     public Func<TNode, Task>? NodeSelectionCallback { get; set; }
 
-    public bool IsReadyToLoad => !(SVGEditor.BBox is null);
+    public bool IsReadyToLoad => SVGEditor.BBox is not null;
 
     protected override void OnInitialized()
     {
@@ -132,55 +132,71 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
                 newNodeElement.Cx = Random.Shared.NextDouble() * 20;
                 newNodeElement.Cy = Random.Shared.NextDouble() * 20;
             }
-            else // TODO: We should handle all edges not just the first
+            else
             {
-                var singleEdge = newNodeElement.Edges.First();
-                var neighborNode = singleEdge.From == newNodeElement ? singleEdge.To : singleEdge.From;
-                var neighborsNeighbors = neighborNode.Edges.Select(e => e.From == neighborNode ? e.To : e.From).Where(n => n != newNodeElement).ToArray();
-
-                var edgeLength = EdgeSpringLengthMapper(singleEdge.Data);
-
-                if (neighborsNeighbors.Length is 0)
+                double newX = 0;
+                double newY = 0;
+                foreach (var neighborEdge in newNodeElement.Edges)
                 {
-                    var randomAngle = neighborNode.Cx + Random.Shared.NextDouble() * Math.PI;
-                    newNodeElement.Cx = neighborNode.Cx + Math.Sin(randomAngle) * edgeLength;
-                    newNodeElement.Cy = neighborNode.Cy + Math.Cos(randomAngle) * edgeLength;
+                    var neighborMirroredPosition = MirroredAverageOfNeighborNodes(neighborEdge, newNodeElement);
+                    newX += neighborMirroredPosition.x / newNodeElement.Edges.Count();
+                    newY += neighborMirroredPosition.y / newNodeElement.Edges.Count();
                 }
-                else
-                {
-                    double averageXPositionOfNeighborsNeighbors = 0;
-                    double averageYPositionOfNeighborsNeighbors = 0;
-
-                    foreach (var neighborsNeighborNode in neighborsNeighbors)
-                    {
-                        averageXPositionOfNeighborsNeighbors += neighborsNeighborNode.Cx / neighborsNeighbors.Length;
-                        averageYPositionOfNeighborsNeighbors += neighborsNeighborNode.Cy / neighborsNeighbors.Length;
-                    }
-                    // TODO: Handle the case where averagePositionOfNeighborsNeighbors==neighborsPosition;
-                    var differenceBetweenAverageNeighborsNeighborsAndNeighbor = (
-                        x: averageXPositionOfNeighborsNeighbors - neighborNode.Cx,
-                        y: averageYPositionOfNeighborsNeighbors - neighborNode.Cy
-                    );
-                    var distanceBetweenAverageNeighborsNeighborsAndNeighbor = Math.Sqrt(Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.x, 2) + Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.y, 2));
-                    var normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor = (
-                        x: differenceBetweenAverageNeighborsNeighborsAndNeighbor.x / distanceBetweenAverageNeighborsNeighborsAndNeighbor,
-                        y: differenceBetweenAverageNeighborsNeighborsAndNeighbor.y / distanceBetweenAverageNeighborsNeighborsAndNeighbor
-                    );
-
-                    newNodeElement.Cx = neighborNode.Cx - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.x * edgeLength;
-                    newNodeElement.Cy = neighborNode.Cy - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.y * edgeLength;
-                }
+                newNodeElement.Cx = newX;
+                newNodeElement.Cy = newY;
             }
             SVGEditor.AddElement(newNodeElement);
         }
         nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
 
-        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
+        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Cast<Edge<TNode, TEdge>>())
         {
             edge.UpdateLine();
         }
     }
 
+    private (double x, double y) MirroredAverageOfNeighborNodes(Edge<TNode, TEdge> neighborEdge, Node<TNode, TEdge> rootNode)
+    {
+        var neighborNode = neighborEdge.From == rootNode ? neighborEdge.To : neighborEdge.From;
+        var neighborsNeighbors = neighborNode.Edges.Select(e => e.From == neighborNode ? e.To : e.From).Where(n => n != rootNode).ToArray();
+
+        var edgeLength = EdgeSpringLengthMapper(neighborEdge.Data);
+
+        if (neighborsNeighbors.Length is 0)
+        {
+            var randomAngle = neighborNode.Cx + Random.Shared.NextDouble() * Math.PI;
+            return (
+                x: neighborNode.Cx + Math.Sin(randomAngle) * edgeLength,
+                y: neighborNode.Cy + Math.Cos(randomAngle) * edgeLength
+            );
+        }
+        else
+        {
+            double averageXPositionOfNeighborsNeighbors = 0;
+            double averageYPositionOfNeighborsNeighbors = 0;
+
+            foreach (var neighborsNeighborNode in neighborsNeighbors)
+            {
+                averageXPositionOfNeighborsNeighbors += neighborsNeighborNode.Cx / neighborsNeighbors.Length;
+                averageYPositionOfNeighborsNeighbors += neighborsNeighborNode.Cy / neighborsNeighbors.Length;
+            }
+            // TODO: Handle the case where averagePositionOfNeighborsNeighbors==neighborsPosition;
+            var differenceBetweenAverageNeighborsNeighborsAndNeighbor = (
+                x: averageXPositionOfNeighborsNeighbors - neighborNode.Cx,
+                y: averageYPositionOfNeighborsNeighbors - neighborNode.Cy
+            );
+            var distanceBetweenAverageNeighborsNeighborsAndNeighbor = Math.Sqrt(Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.x, 2) + Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.y, 2));
+            var normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor = (
+                x: differenceBetweenAverageNeighborsNeighborsAndNeighbor.x / distanceBetweenAverageNeighborsNeighborsAndNeighbor,
+                y: differenceBetweenAverageNeighborsNeighborsAndNeighbor.y / distanceBetweenAverageNeighborsNeighborsAndNeighbor
+            );
+
+            return (
+                x: neighborNode.Cx - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.x * edgeLength,
+                y: neighborNode.Cy - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.y * edgeLength
+            );
+        }
+    }
 
     public Task ForceDirectedLayout()
     {
@@ -221,7 +237,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
             }
         }
 
-        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
+        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Cast<Edge<TNode, TEdge>>())
         {
             edge.UpdateLine();
         }
@@ -233,7 +249,7 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         if (SVGEditor.BBox is null || SVGEditor.SelectedShapes.Count > 0) return;
         double lowerX = double.MaxValue, lowerY = double.MaxValue;
         double upperX = double.MinValue, upperY = double.MinValue;
-        foreach (Shape shape in SVGEditor.Elements)
+        foreach (Shape shape in SVGEditor.Elements.Cast<Shape>())
         {
             foreach ((double x, double y) in shape.SelectionPoints)
             {
@@ -251,17 +267,17 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         SVGEditor.Scale = (SVGEditor.Scale * (1 - delta) + newScale * delta);
         SVGEditor.Translate = (SVGEditor.Translate.x * (1 - delta) + newTranslate.x * delta, SVGEditor.Translate.y * (1 - delta) + newTranslate.y * delta);
     }
-    protected Dictionary<string, TNode> Nodes { get; set; } = new();
+    protected Dictionary<string, TNode> Nodes { get; set; } = [];
 
-    protected Dictionary<string, TEdge> Edges { get; set; } = new();
+    protected Dictionary<string, TEdge> Edges { get; set; } = [];
 
     protected SVGEditor.SVGEditor SVGEditor { get; set; } = default!;
 
     protected string Input { get; set; } = "";
 
-    protected List<SupportedElement> SupportedElements { get; set; } = new()
-    {
+    protected List<SupportedElement> SupportedElements { get; set; } =
+    [
         new(typeof(Node<TNode, TEdge>), element => element.TagName is "CIRCLE" && element.GetAttribute("data-elementtype") == "node"),
         new(typeof(Edge<TNode, TEdge>), element => element.TagName is "LINE" && element.GetAttribute("data-elementtype") == "edge"),
-    };
+    ];
 }
