@@ -267,6 +267,19 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         SVGEditor.Scale = (SVGEditor.Scale * (1 - delta) + newScale * delta);
         SVGEditor.Translate = (SVGEditor.Translate.x * (1 - delta) + newTranslate.x * delta, SVGEditor.Translate.y * (1 - delta) + newTranslate.y * delta);
     }
+
+    public void MoveEdgesToBack()
+    {
+        var prevSelectedShapes = SVGEditor.SelectedShapes.ToList();
+        SVGEditor.ClearSelectedShapes();
+        foreach (Shape shape in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
+        {
+            SVGEditor.SelectShape(shape);
+        }
+        SVGEditor.MoveToBack();
+        SVGEditor.SelectedShapes = prevSelectedShapes;
+    }
+
     protected Dictionary<string, TNode> Nodes { get; set; } = [];
 
     protected Dictionary<string, TEdge> Edges { get; set; } = [];
