@@ -8,12 +8,14 @@
 
 <p>On this page we can animate some of the details of the nodes in the graph while we run the force directed layout.</p>
 
-<button class="btn btn-success" @onclick="AddNode">Add Node</button>
+<div style="display:flex;grid-gap:5px;">
+    <button class="btn btn-success" @onclick="AddNode">Add Node</button>
 
-@if (pages.Count > 3)
-{
-    <button class="btn btn-success" @onclick="RemoveNode">Remove Node</button>
-}
+    @if (pages.Count > 3)
+    {
+        <button class="btn btn-success" @onclick="RemoveNode">Remove Node</button>
+    }
+</div>
 
 <div style="height:70vh;">
     <GraphEditor @ref=GraphEditor
