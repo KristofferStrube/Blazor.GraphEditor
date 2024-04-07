@@ -71,7 +71,7 @@
                 p.Radians = p.BaseOffset + (unixTimeSeconds * 2) % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
-            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 4, 1));
+            GraphEditor.SVGEditor.FitViewportToAllShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 4, 1));
             prevUnixTimeSeconds = unixTimeSeconds;
             await Task.Delay(1);
         }

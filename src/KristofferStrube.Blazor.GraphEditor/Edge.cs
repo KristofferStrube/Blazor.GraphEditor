@@ -1,7 +1,6 @@
 ﻿using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components.Web;
-using System.Xml.Linq;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 

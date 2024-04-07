@@ -60,7 +60,7 @@ else
             double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
             if (unixTimeSeconds - startUnixTimeSeconds < 3)
             {
-                GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 50);
+                GraphEditor.SVGEditor.FitViewportToAllShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 50);
                 prevUnixTimeSeconds = unixTimeSeconds;
             }
             await Task.Delay(1);

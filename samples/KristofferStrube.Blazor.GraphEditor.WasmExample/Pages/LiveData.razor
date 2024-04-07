@@ -10,6 +10,11 @@
 
 <button class="btn btn-success" @onclick="AddNode">Add Node</button>
 
+@if (pages.Count > 3)
+{
+    <button class="btn btn-success" @onclick="RemoveNode">Remove Node</button>
+}
+
 <div style="height:70vh;">
     <GraphEditor @ref=GraphEditor
                  TNode="Page"
@@ -32,7 +37,6 @@
     private bool running = true;
 
     private double edgeLengthSinAngle = 0;
-    int nodeCount = 8;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -42,8 +46,8 @@
             await Task.Delay(50);
         }
 
-        pages = Enumerable.Range(0, nodeCount).Select(i => new Page(i.ToString()) { BaseOffset = i * Math.PI * 2 / nodeCount }).ToList();
-        transitions = Enumerable.Range(0, nodeCount).Select(i => new Transition(pages[i % nodeCount], pages[(i + 1) % nodeCount], 1)).ToList();
+        pages = Enumerable.Range(0, 8).Select(i => new Page(i.ToString()) { BaseOffset = i * Math.PI * 2 / 8 }).ToList();
+        transitions = Enumerable.Range(0, 8).Select(i => new Transition(pages[i % 8], pages[(i + 1) % 8], 1)).ToList();
 
         await GraphEditor.LoadGraph(pages, transitions);
 
@@ -57,8 +61,9 @@
                 p.Radians = p.BaseOffset + unixTimeSeconds % (Math.PI * 2);
             });
             await GraphEditor.ForceDirectedLayout();
-            GraphEditor.FitToShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), 50);
+            GraphEditor.SVGEditor.FitViewportToAllShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), 50);
             prevUnixTimeSeconds = unixTimeSeconds;
+            StateHasChanged();
             await Task.Delay(1);
         }
     }
@@ -74,16 +79,29 @@
 
     public async Task AddNode()
     {
-        pages.Add(new Page(nodeCount++.ToString()) { BaseOffset = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0 });
-        transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
-        if (Random.Shared.NextDouble() < 0.07)
+        pages.Add(new Page(Guid.NewGuid().ToString()) { BaseOffset = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0 });
+        double chance = 1;
+        for (int i = 0; i < 3; i++)
         {
-            transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
+            if (chance > 0.93)
+            {
+                var fromNode = pages[Random.Shared.Next(Math.Max(0, pages.Count - 2))];
+                var toNode = pages[^1];
+                if (fromNode != toNode)
+                {
+                    transitions.Add(new Transition(fromNode, toNode, 1, 200));
+                }
+            }
+            chance = Random.Shared.NextDouble();
         }
-        if (Random.Shared.NextDouble() < 0.07)
-        {
-            transitions.Add(new Transition(pages[Random.Shared.Next(nodeCount - 2)], pages[^1], 1, 200));
-        }
+        await GraphEditor.UpdateGraph(pages, transitions);
+    }
+
+    public async Task RemoveNode()
+    {
+        Page pageToRemove = pages[Random.Shared.Next(pages.Count - 1)];
+        pages.Remove(pageToRemove);
+        transitions = transitions.Where(t => t.from != pageToRemove && t.to != pageToRemove).ToList();
         await GraphEditor.UpdateGraph(pages, transitions);
     }
 

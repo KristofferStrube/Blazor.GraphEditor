@@ -1,9 +1,5 @@
-using AngleSharp.Dom;
 using KristofferStrube.Blazor.SVGEditor;
 using Microsoft.AspNetCore.Components;
-using System.Globalization;
-using System.Xml.Linq;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
@@ -47,6 +43,14 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     public Func<TNode, Task>? NodeSelectionCallback { get; set; }
 
     public bool IsReadyToLoad => SVGEditor.BBox is not null;
+
+    protected Dictionary<string, TNode> Nodes { get; set; } = [];
+
+    protected Dictionary<string, TEdge> Edges { get; set; } = [];
+
+    public SVGEditor.SVGEditor SVGEditor { get; set; } = default!;
+
+    protected string Input { get; set; } = "";
 
     protected override void OnInitialized()
     {
@@ -104,27 +108,60 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     {
         Dictionary<TNode, Node<TNode, TEdge>> newNodeElementDictionary = [];
 
+        HashSet<string> newSetOfNodes = new(nodes.Count);
+        HashSet<string> newSetOfEdges = new(edges.Count);
+
+        // Add new nodes
         foreach (TNode node in nodes)
         {
-            if (!Nodes.ContainsKey(NodeIdMapper(node)))
+            string nodeKey = NodeIdMapper(node);
+            if (!Nodes.ContainsKey(nodeKey))
             {
                 Node<TNode, TEdge> element = Node<TNode, TEdge>.CreateNew(SVGEditor, this, node);
                 newNodeElementDictionary.Add(node, element);
-                Nodes.Add(NodeIdMapper(node), node);
+                Nodes.Add(nodeKey, node);
             }
+            newSetOfNodes.Add(nodeKey);
         }
+
+        // Add new edges
         foreach (TEdge edge in edges)
         {
-            if (!Edges.ContainsKey(EdgeId(edge)))
+            string edgeKey = EdgeId(edge);
+            if (!Edges.ContainsKey(edgeKey))
             {
                 TNode from = EdgeFromMapper(edge);
                 TNode to = EdgeToMapper(edge);
                 Node<TNode, TEdge> fromElement = newNodeElementDictionary.TryGetValue(from, out var eFrom) ? eFrom : nodeElements.First(n => n.Data.Equals(from));
                 Node<TNode, TEdge> toElement = newNodeElementDictionary.TryGetValue(to, out var eTo) ? eTo : nodeElements.First(n => n.Data.Equals(to));
                 Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, fromElement, toElement);
-                Edges.Add(EdgeId(edge), edge);
+                Edges.Add(edgeKey, edge);
+            }
+            newSetOfEdges.Add(edgeKey);
+        }
+
+        // Remove old edges
+        foreach (string edgeKey in Edges.Keys)
+        {
+            if (!newSetOfEdges.Contains(edgeKey))
+            {
+                Edge<TNode, TEdge> edgeToRemove = (Edge<TNode, TEdge>)SVGEditor.Elements.First(e => e is Edge<TNode, TEdge> edge && EdgeId(edge.Data) == edgeKey);
+                SVGEditor.RemoveElement(edgeToRemove);
+                Edges.Remove(edgeKey);
             }
         }
+
+        // Remove old nodes
+        foreach (string nodeKey in Nodes.Keys)
+        {
+            if (!newSetOfNodes.Contains(nodeKey))
+            {
+                Node<TNode, TEdge> nodeToRemove = (Node<TNode, TEdge>)SVGEditor.Elements.First(e => e is Node<TNode, TEdge> node && NodeIdMapper(node.Data) == nodeKey);
+                SVGEditor.RemoveElement(nodeToRemove);
+                Nodes.Remove(nodeKey);
+            }
+        }
+
         foreach (var newNodeElement in newNodeElementDictionary.Values)
         {
             if (newNodeElement.Edges.Count is 0)
@@ -244,30 +281,6 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         return Task.CompletedTask;
     }
 
-    public void FitToShapes(double delta = 1, double padding = 20)
-    {
-        if (SVGEditor.BBox is null || SVGEditor.SelectedShapes.Count > 0) return;
-        double lowerX = double.MaxValue, lowerY = double.MaxValue;
-        double upperX = double.MinValue, upperY = double.MinValue;
-        foreach (Shape shape in SVGEditor.Elements.Cast<Shape>())
-        {
-            foreach ((double x, double y) in shape.SelectionPoints)
-            {
-                double strokeWidth = double.TryParse(shape.StrokeWidth, CultureInfo.InvariantCulture, out double result) ? result : 0;
-                lowerX = Math.Min(x - strokeWidth, lowerX);
-                upperX = Math.Max(x + strokeWidth, upperX);
-                lowerY = Math.Min(y - strokeWidth, lowerY);
-                upperY = Math.Max(y + strokeWidth, upperY);
-            }
-        }
-        double elementsWidth = upperX - lowerX;
-        double elementsHeight = upperY - lowerY;
-        var newScale = Math.Min((SVGEditor.BBox.Width - (padding * 2)) / elementsWidth, (SVGEditor.BBox.Height - (padding * 2)) / elementsHeight);
-        (double x, double y) newTranslate = ((SVGEditor.BBox.Width / 2) - ((lowerX + (elementsWidth / 2)) * newScale), (SVGEditor.BBox.Height / 2) - ((lowerY + (elementsHeight / 2)) * newScale));
-        SVGEditor.Scale = (SVGEditor.Scale * (1 - delta) + newScale * delta);
-        SVGEditor.Translate = (SVGEditor.Translate.x * (1 - delta) + newTranslate.x * delta, SVGEditor.Translate.y * (1 - delta) + newTranslate.y * delta);
-    }
-
     public void MoveEdgesToBack()
     {
         var prevSelectedShapes = SVGEditor.SelectedShapes.ToList();
@@ -279,14 +292,6 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         SVGEditor.MoveToBack();
         SVGEditor.SelectedShapes = prevSelectedShapes;
     }
-
-    protected Dictionary<string, TNode> Nodes { get; set; } = [];
-
-    protected Dictionary<string, TEdge> Edges { get; set; } = [];
-
-    protected SVGEditor.SVGEditor SVGEditor { get; set; } = default!;
-
-    protected string Input { get; set; } = "";
 
     protected List<SupportedElement> SupportedElements { get; set; } =
     [
