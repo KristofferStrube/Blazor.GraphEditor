@@ -119,8 +119,8 @@ public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNod
         };
         from.Edges.Add(edge);
         to.Edges.Add(edge);
-        from.NeighborNodes[to] = edge;
-        to.NeighborNodes[from] = edge;
+        from.NeighborNodes[graphEditor.NodeIdMapper(to.Data)] = edge;
+        to.NeighborNodes[graphEditor.NodeIdMapper(from.Data)] = edge;
 
         SVG.Elements.Add(edge);
         return edge;

@@ -48,7 +48,7 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
 
     public HashSet<Edge<TNodeData, TEdgeData>> Edges { get; } = new();
 
-    public Dictionary<Node<TNodeData, TEdgeData>, Edge<TNodeData, TEdgeData>> NeighborNodes { get; } = new();
+    public Dictionary<string, Edge<TNodeData, TEdgeData>> NeighborNodes { get; } = new();
 
     public override void HandlePointerMove(PointerEventArgs eventArgs)
     {

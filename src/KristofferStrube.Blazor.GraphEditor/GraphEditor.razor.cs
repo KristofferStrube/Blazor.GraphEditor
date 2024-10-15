@@ -237,31 +237,22 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
 
     public Task ForceDirectedLayout()
     {
-        for (int i = 0; i < nodeElements.Length; i++)
+        Span<Node<TNode, TEdge>> nodes = nodeElements.AsSpan();
+        foreach (var node1 in nodes)
         {
-            Node<TNode, TEdge> node1 = nodeElements[i];
             double mx = 0;
             double my = 0;
-            for (int j = 0; j < nodeElements.Length; j++)
+            foreach (var node2 in nodes)
             {
-                if (i == j)
+                if (node1 == node2 || node1.NeighborNodes.ContainsKey(NodeIdMapper(node2.Data)))
                 {
                     continue;
                 }
 
-                Node<TNode, TEdge> node2 = nodeElements[j];
                 double dx = node1.Cx - node2.Cx;
                 double dy = node1.Cy - node2.Cy;
                 double d = Math.Sqrt(dx * dx + dy * dy);
-                double force;
-                if (node1.NeighborNodes.TryGetValue(node2, out var edge))
-                {
-                    force = EdgeSpringConstantMapper(edge.Data) * Math.Log(d / EdgeSpringLengthMapper(edge.Data));
-                }
-                else
-                {
-                    force = -(NodeRepulsionMapper(node1.Data) + NodeRepulsionMapper(node2.Data)) / 2 / (d * d);
-                }
+                double force = -(NodeRepulsionMapper(node1.Data) + NodeRepulsionMapper(node2.Data)) / 2 / (d * d);
 
                 mx -= dx * 0.1 * force;
                 my -= dy * 0.1 * force;
@@ -274,6 +265,27 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
             }
         }
 
+        foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Cast<Edge<TNode, TEdge>>())
+        {
+            double dx = edge.From.Cx - edge.To.Cx;
+            double dy = edge.From.Cy - edge.To.Cy;
+            double d = Math.Sqrt(dx * dx + dy * dy);
+            double force = EdgeSpringConstantMapper(edge.Data) * Math.Log(d / EdgeSpringLengthMapper(edge.Data));
+
+            double mx = dx * 0.1 * force;
+            double my = dy * 0.1 * force;
+
+            if (!SVGEditor.SelectedShapes.Contains(edge.From))
+            {
+                edge.From.Cx -= mx;
+                edge.From.Cy -= my;
+            }
+            if (!SVGEditor.SelectedShapes.Contains(edge.To))
+            {
+                edge.To.Cx += mx;
+                edge.To.Cy += my;
+            }
+        }
         foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Cast<Edge<TNode, TEdge>>())
         {
             edge.UpdateLine();
