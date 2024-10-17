@@ -1,13 +1,14 @@
 ﻿@page "/FollowingGraph/"
 @implements IDisposable
 @inject HttpClient httpClient
+@using KristofferStrube.ActivityStreams
 @using KristofferStrube.Blazor.GraphEditor
 
 <PageTitle>Blazor.GraphEditor - Following Graph</PageTitle>
 
 <h1>Following Graph</h1>
 
-<p>The following shows a following graph.</p>
+<p>The following shows a following graph for @@kristofferstrube@@hachyderm.io</p>
 
 @if (selectedUser is null)
 {
@@ -15,16 +16,19 @@
 }
 else
 {
-    <p>Selected user: <b>@selectedUser.id</b></p>
+    <p>Selected user: <b>@selectedUser.Id</b></p>
 }
 
 <div style="height:80vh;">
     <GraphEditor @ref=GraphEditor
                  TNode="User"
                  TEdge="Follow"
-                 NodeIdMapper="n => n.id"
-                 NodeRadiusMapper="n => n.size"
-                 NodeColorMapper="n => n.color"
+                 NodeIdMapper="n => n.Id"
+                 NodeRadiusMapper="n => n.Size"
+                 NodeColorMapper="n => n.Color"
+                 NodeImageMapper="n => n.Image"
+                 NodeRepulsionMapper="_ => 1200"
+                 EdgeSpringConstantMapper="_ => 0.8"
                  EdgeFromMapper="e => e.from"
                  EdgeToMapper="e => e.to"
                  EdgeWidthMapper="_ => 5"
@@ -62,6 +66,18 @@ else
 
         List<User> users = [primaryUser, .. following];
 
+        Task.WhenAll(users.Select(async user =>
+        {
+            var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Profile/{user.Id}");
+
+            if (!response.IsSuccessStatusCode)
+                return;
+
+            Person? person = await response.Content.ReadFromJsonAsync<Person>();
+
+            user.Image = person?.Icon?.FirstOrDefault() is Image { } image ? image.Url.FirstOrDefault()?.Href?.ToString() : null;
+        }));
+
         List<Follow> edges = following.Select(f => new Follow(primaryUser, f)).ToList();
 
         await GraphEditor.LoadGraph(users, edges);
@@ -81,7 +97,20 @@ else
         }
     }
 
-    public record User(string id, string color, float size = 30);
+    public class User(string id, string color, float size = 30) : IEquatable<User>
+    {
+        public string Id = id;
+        public string Color = color;
+        public float Size = size;
+
+        public string? Image { get; set; }
+
+        public override bool Equals(object? obj) => obj is User user && Equals(user);
+
+        public bool Equals(User? other) => other?.Id == Id;
+
+        public override int GetHashCode() => Id.GetHashCode();
+    }
     public record Follow(User from, User to);
 
     public void Dispose()

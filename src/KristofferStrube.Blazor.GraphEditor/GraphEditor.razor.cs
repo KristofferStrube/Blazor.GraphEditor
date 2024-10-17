@@ -15,14 +15,29 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter, EditorRequired]
     public required Func<TNode, string> NodeIdMapper { get; set; }
 
+    /// <summary>
+    /// Defaults to <c>"#66BB6A"</c>.
+    /// </summary>
     [Parameter]
     public Func<TNode, string> NodeColorMapper { get; set; } = _ => "#66BB6A";
 
+    /// <summary>
+    /// Defaults to <c>50</c>.
+    /// </summary>
     [Parameter]
     public Func<TNode, double> NodeRadiusMapper { get; set; } = _ => 50;
 
+    /// <summary>
+    /// Defaults to <c>800</c>.
+    /// </summary>
     [Parameter]
     public Func<TNode, double> NodeRepulsionMapper { get; set; } = _ => 800;
+
+    /// <summary>
+    /// Defaults to <see langword="null"/>.
+    /// </summary>
+    [Parameter]
+    public Func<TNode, string?> NodeImageMapper { get; set; } = _ => null;
 
     [Parameter, EditorRequired]
     public required Func<TEdge, TNode> EdgeFromMapper { get; set; }
@@ -30,12 +45,21 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter, EditorRequired]
     public required Func<TEdge, TNode> EdgeToMapper { get; set; }
 
+    /// <summary>
+    /// Defaults to <c>1</c>.
+    /// </summary>
     [Parameter]
     public Func<TEdge, double> EdgeWidthMapper { get; set; } = _ => 1;
 
+    /// <summary>
+    /// Defaults to <c>1</c>.
+    /// </summary>
     [Parameter]
     public Func<TEdge, double> EdgeSpringConstantMapper { get; set; } = _ => 1;
 
+    /// <summary>
+    /// Defaults to <c>200</c>.
+    /// </summary>
     [Parameter]
     public Func<TEdge, double> EdgeSpringLengthMapper { get; set; } = _ => 200;
 

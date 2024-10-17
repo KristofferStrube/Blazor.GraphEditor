@@ -46,6 +46,8 @@ public class Node<TNodeData, TEdgeData> : Circle where TNodeData : IEquatable<TN
         }
     }
 
+    public string? Image => GraphEditor.NodeImageMapper(Data);
+
     public HashSet<Edge<TNodeData, TEdgeData>> Edges { get; } = new();
 
     public Dictionary<string, Edge<TNodeData, TEdgeData>> NeighborNodes { get; } = new();
