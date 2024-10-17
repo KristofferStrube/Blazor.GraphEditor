@@ -37,9 +37,9 @@
                  NodeImageMapper="n => n.Image"
                  NodeRepulsionMapper="_ => 1200"
                  EdgeSpringConstantMapper="_ => 0.8"
-                 EdgeSpringLengthMapper="_ => 250"
-                 EdgeFromMapper="e => e.from"
-                 EdgeToMapper="e => e.to"
+                 EdgeSpringLengthMapper="e => e.EdgeLength"
+                 EdgeFromMapper="e => e.From"
+                 EdgeToMapper="e => e.To"
                  EdgeWidthMapper="_ => 5"
                  NodeSelectionCallback="async (user) => { selectedUser = user; await InvokeAsync(StateHasChanged); }" />
 </div>
@@ -94,6 +94,9 @@
 
     private async Task AddMoreUsers(User fromUser, int size)
     {
+        selectedUser = null;
+        StateHasChanged();
+
         var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Following/{fromUser.Id}");
 
         if (!response.IsSuccessStatusCode)
@@ -114,12 +117,18 @@
 
         users = [.. users, .. allNewUsers];
 
+        // Increase distance to this user to make room for new neighbors.
+        foreach (var edge in edges.Where(e => e.To.Equals(fromUser) || e.From.Equals(fromUser)))
+        {
+            edge.EdgeLength = 500;
+        }
+
         foreach (var follow in following)
         {
             var newEdge = new Follow(fromUser, follow);
-            if (!edges.Contains(newEdge))
+            if (!edges.Any(e => e.Equals(newEdge)))
             {
-                edges.Add(new Follow(fromUser, follow));
+                edges.Add(newEdge);
             }
         }
 
@@ -152,7 +161,15 @@
 
         public override int GetHashCode() => Id.GetHashCode();
     }
-    public record Follow(User from, User to);
+    public class Follow(User from, User to) : IEquatable<Follow>
+    {
+        public User From => from;
+        public User To => to;
+
+        public float EdgeLength { get; set; } = 250;
+
+        public bool Equals(Follow? other) => other is not null && other.From.Equals(From) && other.To.Equals(To);
+    }
 
     public void Dispose()
     {
