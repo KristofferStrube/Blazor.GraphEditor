@@ -8,18 +8,21 @@
 
 <h1>Following Graph</h1>
 
-<p>The following shows a following graph for @@kristofferstrube@@hachyderm.io</p>
+<p>
+    The following shows a following graph for @@kristofferstrube@@hachyderm.io<br/>
 
-@if (selectedUser is null)
-{
+    @if (selectedUser is null)
+    {
     <p>Select a node to show what user that is.</p>
-}
-else
-{
+    }
+    else
+    {
     <p>Selected user: <b>@selectedUser.Id</b></p>
-}
+    }
+</p>
 
-<div style="height:80vh;">
+
+<div style="height:75vh;">
     <GraphEditor @ref=GraphEditor
                  TNode="User"
                  TEdge="Follow"
