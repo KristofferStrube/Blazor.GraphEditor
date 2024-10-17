@@ -1,0 +1,91 @@
+﻿@page "/FollowingGraph/"
+@implements IDisposable
+@inject HttpClient httpClient
+@using KristofferStrube.Blazor.GraphEditor
+
+<PageTitle>Blazor.GraphEditor - Following Graph</PageTitle>
+
+<h1>Following Graph</h1>
+
+<p>The following shows a following graph.</p>
+
+@if (selectedUser is null)
+{
+    <p>Select a node to show what user that is.</p>
+}
+else
+{
+    <p>Selected user: <b>@selectedUser.id</b></p>
+}
+
+<div style="height:80vh;">
+    <GraphEditor @ref=GraphEditor
+                 TNode="User"
+                 TEdge="Follow"
+                 NodeIdMapper="n => n.id"
+                 NodeRadiusMapper="n => n.size"
+                 NodeColorMapper="n => n.color"
+                 EdgeFromMapper="e => e.from"
+                 EdgeToMapper="e => e.to"
+                 EdgeWidthMapper="_ => 5"
+                 NodeSelectionCallback="async (user) => { selectedUser = user; await InvokeAsync(StateHasChanged); }" />
+</div>
+
+@code {
+    private GraphEditor.GraphEditor<User, Follow> GraphEditor = default!;
+    private bool running = true;
+    private string? error;
+    private User? selectedUser;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        while (!GraphEditor.IsReadyToLoad)
+        {
+            await Task.Delay(50);
+        }
+
+        string primaryUserId = "@kristofferstrube@hachyderm.io";
+
+        var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Following/{primaryUserId}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            error = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        var followingUrls = await response.Content.ReadFromJsonAsync<string[]>();
+        var following = followingUrls!.Select(url => url[8..].Split("/users/")).Select(parts => new User($"@{parts[1]}@{parts[0]}", "#7070f0"));
+
+        User primaryUser = new(primaryUserId, "#70f070", size: 50);
+
+        List<User> users = [primaryUser, .. following];
+
+        List<Follow> edges = following.Select(f => new Follow(primaryUser, f)).ToList();
+
+        await GraphEditor.LoadGraph(users, edges);
+
+        double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+        double startUnixTimeSeconds = prevUnixTimeSeconds;
+        while (running)
+        {
+            await GraphEditor.ForceDirectedLayout();
+            double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+            if (unixTimeSeconds - startUnixTimeSeconds < 7)
+            {
+                GraphEditor.SVGEditor.FitViewportToAllShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 100);
+                prevUnixTimeSeconds = unixTimeSeconds;
+            }
+            await Task.Delay(1);
+        }
+    }
+
+    public record User(string id, string color, float size = 30);
+    public record Follow(User from, User to);
+
+    public void Dispose()
+    {
+        running = false;
+    }
+}
