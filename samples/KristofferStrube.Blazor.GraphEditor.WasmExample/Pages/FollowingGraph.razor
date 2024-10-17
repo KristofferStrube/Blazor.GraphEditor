@@ -17,7 +17,12 @@
     }
     else
     {
-        <text>Selected user: <b>@selectedUser.Id</b></text>
+        <text>
+            Selected user: <b>@selectedUser.Id</b>
+            &nbsp;
+            <button class="btn btn-primary" @onclick="Expand">Expand with their followings</button>
+            &nbsp; <small>(We only show 50 followings for each user)</small>
+        </text>
     }
 </p>
 
@@ -31,7 +36,8 @@
                  NodeColorMapper="n => n.Color"
                  NodeImageMapper="n => n.Image"
                  NodeRepulsionMapper="_ => 1200"
-                 EdgeSpringConstantMapper="_ => 0.8"
+                 EdgeSpringConstantMapper="_ => 0.7"
+                 EdgeSpringLengthMapper="_ => 200"
                  EdgeFromMapper="e => e.from"
                  EdgeToMapper="e => e.to"
                  EdgeWidthMapper="_ => 5"
@@ -43,6 +49,8 @@
     private bool running = true;
     private string? error;
     private User? selectedUser;
+    List<Follow> edges = [];
+    List<User> users = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -54,34 +62,11 @@
 
         string primaryUserId = "@kristofferstrube@hachyderm.io";
 
-        var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Following/{primaryUserId}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            error = await response.Content.ReadAsStringAsync();
-            return;
-        }
-
-        var followingUrls = await response.Content.ReadFromJsonAsync<string[]>();
-        var following = followingUrls!.Select(url => url[8..].Split("/users/")).Select(parts => new User($"@{parts[1]}@{parts[0]}", "#7070f0"));
-
         User primaryUser = new(primaryUserId, "#70f070", size: 50);
+        await GetImageForUser(primaryUser);
+        users.Add(primaryUser);
 
-        List<User> users = [primaryUser, .. following];
-
-        Task.WhenAll(users.Select(async user =>
-        {
-            var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Profile/{user.Id}");
-
-            if (!response.IsSuccessStatusCode)
-                return;
-
-            Person? person = await response.Content.ReadFromJsonAsync<Person>();
-
-            user.Image = person?.Icon?.FirstOrDefault() is Image { } image ? image.Url.FirstOrDefault()?.Href?.ToString() : null;
-        }));
-
-        List<Follow> edges = following.Select(f => new Follow(primaryUser, f)).ToList();
+        await AddMoreUsers(primaryUser, 30);
 
         await GraphEditor.LoadGraph(users, edges);
 
@@ -98,6 +83,59 @@
             }
             await Task.Delay(1);
         }
+    }
+
+    public async Task Expand()
+    {
+        await AddMoreUsers(selectedUser!, 20);
+        await GraphEditor.UpdateGraph(users, edges);
+        GraphEditor.MoveEdgesToBack();
+    }
+
+    private async Task AddMoreUsers(User fromUser, int size)
+    {
+        var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Following/{fromUser.Id}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            error = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        var followingUrls = await response.Content.ReadFromJsonAsync<string[]>();
+        var following = followingUrls!
+            .Select(url => url.Length > 12 && url[8..].Split("/users/") is { Length: 2 } parts ? parts : null)
+            .Where(parts => parts is not null)
+            .Select(parts => new User($"@{parts[1]}@{parts[0]}", "#7070f0", size: size))
+            .OrderByDescending(u => users.Any(existing => existing.Equals(u)) ? 1 : 0)
+            .Take(50)
+            .ToList();
+        var allNewUsers = following.Where(f => !users.Any(u => u.Equals(f))).ToList();
+
+        users = [.. users, .. allNewUsers];
+
+        foreach (var follow in following)
+        {
+            var newEdge = new Follow(fromUser, follow);
+            if (!edges.Contains(newEdge))
+            {
+                edges.Add(new Follow(fromUser, follow));
+            }
+        }
+
+        Task.WhenAll(allNewUsers.Select(GetImageForUser));
+    }
+
+    public async Task GetImageForUser(User user)
+    {
+        var response = await httpClient.GetAsync($"https://kristoffer-strube.dk/API/mastodon/Profile/{user.Id}");
+
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        Person? person = await response.Content.ReadFromJsonAsync<Person>();
+
+        user.Image = person?.Icon?.FirstOrDefault() is Image { } image ? image.Url.FirstOrDefault()?.Href?.ToString() : null;
     }
 
     public class User(string id, string color, float size = 30) : IEquatable<User>
