@@ -9,7 +9,7 @@
 <h1>Following Graph</h1>
 
 <p>
-    The following shows a following graph for @@kristofferstrube@@hachyderm.io<br />
+    The following shows a following graph from Mastodon for the user <b>@@kristofferstrube@@hachyderm.io</b><br />
 
     @if (selectedUser is null)
     {
@@ -76,7 +76,7 @@
         {
             await GraphEditor.ForceDirectedLayout();
             double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
-            if (unixTimeSeconds - startUnixTimeSeconds < 7)
+            if (unixTimeSeconds - startUnixTimeSeconds < 2)
             {
                 GraphEditor.SVGEditor.FitViewportToAllShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 100);
                 prevUnixTimeSeconds = unixTimeSeconds;
