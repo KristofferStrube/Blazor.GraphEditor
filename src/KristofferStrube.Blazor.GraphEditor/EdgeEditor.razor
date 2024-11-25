@@ -27,7 +27,7 @@
               stroke-dasharray="@SVGElement.StrokeDasharray"
               stroke-dashoffset="@SVGElement.StrokeDashoffset.AsString()"
               fill="@SVGElement.Fill"
-              marker-end=@(SVGElement.X1 != SVGElement.X2 && SVGElement.Y1 != SVGElement.Y2 ? "url(#arrow)" : "")>
+              marker-end=@(SVGElement.ShowArrow && SVGElement.X1 != SVGElement.X2 && SVGElement.Y1 != SVGElement.Y2 ? "url(#arrow)" : "")>
         </line>
     </g>
 </ContextMenuTrigger>

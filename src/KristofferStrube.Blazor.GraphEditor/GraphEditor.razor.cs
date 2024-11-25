@@ -63,6 +63,18 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter]
     public Func<TEdge, double> EdgeSpringLengthMapper { get; set; } = _ => 200;
 
+    /// <summary>
+    /// Defaults to <c>"#000000"</c>.
+    /// </summary>
+    [Parameter]
+    public Func<TEdge, string> EdgeColorMapper { get; set; } = _ => "#000000";
+
+    [Parameter]
+    /// <summary>
+    /// Defaults to <see langword="true"/>
+    /// </summary>
+    public Func<TEdge, bool> EdgeShowsArrow { get; set; } = _ => true;
+
     [Parameter]
     public Func<TNode, Task>? NodeSelectionCallback { get; set; }
 

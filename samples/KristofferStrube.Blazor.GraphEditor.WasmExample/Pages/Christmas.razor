@@ -15,7 +15,9 @@
     EdgeFromMapper="e => e.From"
     EdgeToMapper="e => e.To"
     EdgeWidthMapper="e => e.Width"
-    EdgeSpringLengthMapper="e => e.Length" />
+    EdgeColorMapper="e => e.Color"
+    EdgeSpringLengthMapper="e => e.Length"
+    EdgeShowsArrow="_ => false" />
 </div>
 
 @code {
@@ -60,7 +62,7 @@
             .ToList();
 
         List<Edge> edgesToAdd = [
-            .. Enumerable.Range(0, 12).Select(i => new Edge(pointsToAdd[i], pointsToAdd[(i + 1) % 12], Width: 5)),
+            .. Enumerable.Range(0, 12).Select(i => new Edge(pointsToAdd[i], pointsToAdd[(i + 1) % 12], Width: 5, Color: "#FF2424")),
     new (pointsToAdd[0], pointsToAdd[6], 250),
     new (pointsToAdd[0], pointsToAdd[4], 200),
     new (pointsToAdd[0], pointsToAdd[8], 200),
@@ -92,7 +94,7 @@
 
     public record Point(string Id);
 
-    public record Edge(Point From, Point To, float Length = 100, float Width = 1);
+    public record Edge(Point From, Point To, float Length = 100, float Width = 1, string Color = "#000000");
 
     public void Dispose()
     {

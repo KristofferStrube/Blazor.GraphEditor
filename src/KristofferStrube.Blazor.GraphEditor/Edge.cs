@@ -23,7 +23,9 @@ public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNod
 
     public new string StrokeWidth => GraphEditor.EdgeWidthMapper(Data).AsString();
 
-    public new string Stroke => "black";
+    public new string Stroke => GraphEditor.EdgeColorMapper(Data);
+
+    public bool ShowArrow => GraphEditor.EdgeShowsArrow(Data);
 
     public override void HandlePointerMove(PointerEventArgs eventArgs)
     {
@@ -86,15 +88,15 @@ public class Edge<TNodeData, TEdgeData> : Line where TNodeData : IEquatable<TNod
         double differenceY = To.Cy - From.Cy;
         double distance = Math.Sqrt((differenceX * differenceX) + (differenceY * differenceY));
 
-        if (distance < To.R + From.R + GraphEditor.EdgeWidthMapper(Data) * 3)
+        if (distance < To.R + From.R + (ShowArrow ? GraphEditor.EdgeWidthMapper(Data) * 3 : 0))
         {
             (X1, Y1) = (X2, Y2);
         }
         else
         {
             SetStart((To.Cx, To.Cy));
-            X2 = To.Cx - (differenceX / distance * (To.R + GraphEditor.EdgeWidthMapper(Data) * 3));
-            Y2 = To.Cy - (differenceY / distance * (To.R + GraphEditor.EdgeWidthMapper(Data) * 3));
+            X2 = To.Cx - (differenceX / distance * (To.R + (ShowArrow ? GraphEditor.EdgeWidthMapper(Data) * 3 : 0)));
+            Y2 = To.Cy - (differenceY / distance * (To.R + (ShowArrow ? GraphEditor.EdgeWidthMapper(Data) * 3 : 0)));
         }
     }
 
