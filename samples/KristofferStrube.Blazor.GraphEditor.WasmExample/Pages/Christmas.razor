@@ -7,15 +7,15 @@
 <h1>Christmas</h1>
 <div style="height:70vh;">
     <GraphEditor @ref=GraphEditor
-                 TNode="Point"
-                 TEdge="Edge"
-                 NodeIdMapper="n => n.Id"
-                 NodeColorMapper=@(_ => "#FF4444")
-                 NodeRadiusMapper="_ => 20"
-                 EdgeFromMapper="e => e.From"
-                 EdgeToMapper="e => e.To"
-                 EdgeWidthMapper="e => e.Width"
-                 EdgeSpringLengthMapper="e => e.Length" />
+    TNode="Point"
+    TEdge="Edge"
+    NodeIdMapper="n => n.Id"
+    NodeColorMapper=@(_ => "#FF4444")
+    NodeRadiusMapper="_ => 20"
+    EdgeFromMapper="e => e.From"
+    EdgeToMapper="e => e.To"
+    EdgeWidthMapper="e => e.Width"
+    EdgeSpringLengthMapper="e => e.Length" />
 </div>
 
 @code {
@@ -24,6 +24,7 @@
 
     private GraphEditor.GraphEditor<Point, Edge> GraphEditor = default!;
     private bool running = true;
+    private bool refitToScreen = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -46,7 +47,7 @@
         while (running)
         {
             await GraphEditor.ForceDirectedLayout();
-            if (edges.Count > 0)
+            if (edges.Count > 0 && refitToScreen)
                 GraphEditor.SVGEditor.FitViewportToAllShapes(delta: 0.1);
             await Task.Delay(10);
         }
@@ -69,8 +70,9 @@
     new (pointsToAdd[0], pointsToAdd[7], 200),
     new (pointsToAdd[0], pointsToAdd[2], 170),
     new (pointsToAdd[0], pointsToAdd[10], 170),
-        ];
+    ];
 
+        refitToScreen = true;
         for (int i = 0; i < edgesToAdd.Count && running; i++)
         {
             Edge edge = edgesToAdd[i];
@@ -85,6 +87,7 @@
             await GraphEditor.UpdateGraph(points, edges);
             await Task.Delay(2000);
         }
+        refitToScreen = false;
     }
 
     public record Point(string Id);
