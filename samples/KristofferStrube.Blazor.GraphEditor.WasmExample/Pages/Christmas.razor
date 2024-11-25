@@ -1,0 +1,98 @@
+﻿@page "/Christmas"
+@implements IDisposable
+@using KristofferStrube.Blazor.GraphEditor
+
+<PageTitle>Blazor.GraphEditor - Christmas</PageTitle>
+
+<h1>Christmas</h1>
+<div style="height:70vh;">
+    <GraphEditor @ref=GraphEditor
+                 TNode="Point"
+                 TEdge="Edge"
+                 NodeIdMapper="n => n.Id"
+                 NodeColorMapper=@(_ => "#FF4444")
+                 NodeRadiusMapper="_ => 20"
+                 EdgeFromMapper="e => e.From"
+                 EdgeToMapper="e => e.To"
+                 EdgeWidthMapper="e => e.Width"
+                 EdgeSpringLengthMapper="e => e.Length" />
+</div>
+
+@code {
+    private List<Point> points = new();
+    private List<Edge> edges = new();
+
+    private GraphEditor.GraphEditor<Point, Edge> GraphEditor = default!;
+    private bool running = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        while (!GraphEditor.IsReadyToLoad)
+        {
+            await Task.Delay(50);
+        }
+
+        await GraphEditor.LoadGraph(points, edges);
+
+        await Task.WhenAll(
+            Layout(),
+            AddEdges()
+        );
+    }
+
+    private async Task Layout()
+    {
+        while (running)
+        {
+            await GraphEditor.ForceDirectedLayout();
+            if (edges.Count > 0)
+                GraphEditor.SVGEditor.FitViewportToAllShapes(delta: 0.1);
+            await Task.Delay(10);
+        }
+    }
+
+    private async Task AddEdges()
+    {
+        List<Point> pointsToAdd = Enumerable.Range(0, 12)
+            .Select(i => new Point(i.ToString()))
+            .ToList();
+
+        List<Edge> edgesToAdd = [
+            .. Enumerable.Range(0, 12).Select(i => new Edge(pointsToAdd[i], pointsToAdd[(i + 1) % 12], Width: 5)),
+    new (pointsToAdd[0], pointsToAdd[6], 250),
+    new (pointsToAdd[0], pointsToAdd[4], 200),
+    new (pointsToAdd[0], pointsToAdd[8], 200),
+    new (pointsToAdd[0], pointsToAdd[3], 200),
+    new (pointsToAdd[0], pointsToAdd[9], 200),
+    new (pointsToAdd[0], pointsToAdd[5], 200),
+    new (pointsToAdd[0], pointsToAdd[7], 200),
+    new (pointsToAdd[0], pointsToAdd[2], 170),
+    new (pointsToAdd[0], pointsToAdd[10], 170),
+        ];
+
+        for (int i = 0; i < edgesToAdd.Count && running; i++)
+        {
+            Edge edge = edgesToAdd[i];
+
+            if (!points.Contains(edge.From))
+                points.Add(edge.From);
+            if (!points.Contains(edge.To))
+                points.Add(edge.To);
+
+            edges.Add(edgesToAdd[i]);
+
+            await GraphEditor.UpdateGraph(points, edges);
+            await Task.Delay(200);
+        }
+    }
+
+    public record Point(string Id);
+
+    public record Edge(Point From, Point To, float Length = 100, float Width = 1);
+
+    public void Dispose()
+    {
+        running = false;
+    }
+}
