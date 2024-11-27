@@ -47,17 +47,13 @@
 
         await GraphEditor.LoadGraph(pages, edges);
 
-        double prevUnixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
-        double startUnixTimeSeconds = prevUnixTimeSeconds;
+        DateTimeOffset startTime = DateTimeOffset.UtcNow;
         while (running)
         {
             await GraphEditor.ForceDirectedLayout();
-            double unixTimeSeconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
-            if (unixTimeSeconds - startUnixTimeSeconds < 7)
-            {
-                GraphEditor.SVGEditor.FitViewportToAllShapes(delta: Math.Min((unixTimeSeconds - prevUnixTimeSeconds) * 2, 1), padding: 100);
-                prevUnixTimeSeconds = unixTimeSeconds;
-            }
+            /// First 5 seconds also fit the viewport to all the nodes and edges in the graph.
+            if (DateTimeOffset.UtcNow - startTime < TimeSpan.FromSeconds(5))
+                GraphEditor.SVGEditor.FitViewportToAllShapes(delta: 0.8);
             await Task.Delay(1);
         }
     }

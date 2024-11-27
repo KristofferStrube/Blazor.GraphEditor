@@ -9,18 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="KristofferStrube.ActivityStreams" Version="0.2.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.10" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KristofferStrube.Blazor.GraphEditor\KristofferStrube.Blazor.GraphEditor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Update="Pages\FollowingGraph.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
   </ItemGroup>
 
 </Project>
