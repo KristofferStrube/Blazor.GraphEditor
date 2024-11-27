@@ -3,6 +3,11 @@ using Microsoft.AspNetCore.Components;
 
 namespace KristofferStrube.Blazor.GraphEditor;
 
+/// <summary>
+/// An editor for graphs consisting of nodes and edges.
+/// </summary>
+/// <typeparam name="TNode">The type that will represent the nodes in graph.</typeparam>
+/// <typeparam name="TEdge">The type that will represent the connections between the nodes in the graph.</typeparam>
 public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEquatable<TNode>
 {
     private GraphEditorCallbackContext callbackContext = default!;
@@ -12,6 +17,9 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         return NodeIdMapper(EdgeFromMapper(e)) + "-" + NodeIdMapper(EdgeToMapper(e));
     }
 
+    /// <summary>
+    /// Maps each node to an unique id.
+    /// </summary>
     [Parameter, EditorRequired]
     public required Func<TNode, string> NodeIdMapper { get; set; }
 
@@ -39,9 +47,15 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter]
     public Func<TNode, string?> NodeImageMapper { get; set; } = _ => null;
 
+    /// <summary>
+    /// Maps each edge to which node it goes from.
+    /// </summary>
     [Parameter, EditorRequired]
     public required Func<TEdge, TNode> EdgeFromMapper { get; set; }
 
+    /// <summary>
+    /// Maps each edge to which node it goes to.
+    /// </summary>
     [Parameter, EditorRequired]
     public required Func<TEdge, TNode> EdgeToMapper { get; set; }
 
@@ -69,25 +83,44 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
     [Parameter]
     public Func<TEdge, string> EdgeColorMapper { get; set; } = _ => "#000000";
 
-    [Parameter]
     /// <summary>
     /// Defaults to <see langword="true"/>
     /// </summary>
+    [Parameter]
     public Func<TEdge, bool> EdgeShowsArrow { get; set; } = _ => true;
 
+    /// <summary>
+    /// Callback that will be invoked when a specific node is selected by it getting focus.
+    /// </summary>
     [Parameter]
     public Func<TNode, Task>? NodeSelectionCallback { get; set; }
 
+    /// <summary>
+    /// Whether the underlying <see cref="SVGEditor.SVGEditor"/> has rendered.
+    /// </summary>
     public bool IsReadyToLoad => SVGEditor.BBox is not null;
 
+    /// <summary>
+    /// The nodes of the graph.
+    /// </summary>
     protected Dictionary<string, TNode> Nodes { get; set; } = [];
 
+    /// <summary>
+    /// The edges of the graph.
+    /// </summary>
     protected Dictionary<string, TEdge> Edges { get; set; } = [];
 
+    /// <summary>
+    /// The underlying <see cref="SVGEditor.SVGEditor"/>.
+    /// </summary>
     public SVGEditor.SVGEditor SVGEditor { get; set; } = default!;
 
+    /// <summary>
+    /// A text representation of the graph.
+    /// </summary>
     protected string Input { get; set; } = "";
 
+    /// <inheritdoc/>
     protected override void OnInitialized()
     {
         callbackContext = new()
@@ -102,6 +135,11 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         };
     }
 
+    /// <summary>
+    /// Loads a graph of nodes and edges.
+    /// </summary>
+    /// <param name="nodes">The nodes of the graph.</param>
+    /// <param name="edges">The edges that are present between the given <paramref name="nodes"/>.</param>
     public async Task LoadGraph(List<TNode> nodes, List<TEdge> edges)
     {
         if (SVGEditor.BBox is not null)
@@ -139,7 +177,11 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
     }
 
-
+    /// <summary>
+    /// Updates the nodes and edges that are in the graph without clearing the existing ones.
+    /// </summary>
+    /// <param name="nodes">The nodes of the graph.</param>
+    /// <param name="edges">The edges that are present between the given <paramref name="nodes"/>.</param>
     public async Task UpdateGraph(List<TNode> nodes, List<TEdge> edges)
     {
         Dictionary<TNode, Node<TNode, TEdge>> newNodeElementDictionary = [];
@@ -151,11 +193,10 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         foreach (TNode node in nodes)
         {
             string nodeKey = NodeIdMapper(node);
-            if (!Nodes.ContainsKey(nodeKey))
+            if (Nodes.TryAdd(nodeKey, node))
             {
                 Node<TNode, TEdge> element = Node<TNode, TEdge>.CreateNew(SVGEditor, this, node);
                 newNodeElementDictionary.Add(node, element);
-                Nodes.Add(nodeKey, node);
             }
             newSetOfNodes.Add(nodeKey);
         }
@@ -164,14 +205,13 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         foreach (TEdge edge in edges)
         {
             string edgeKey = EdgeId(edge);
-            if (!Edges.ContainsKey(edgeKey))
+            if (Edges.TryAdd(edgeKey, edge))
             {
                 TNode from = EdgeFromMapper(edge);
                 TNode to = EdgeToMapper(edge);
                 Node<TNode, TEdge> fromElement = newNodeElementDictionary.TryGetValue(from, out var eFrom) ? eFrom : nodeElements.First(n => n.Data.Equals(from));
                 Node<TNode, TEdge> toElement = newNodeElementDictionary.TryGetValue(to, out var eTo) ? eTo : nodeElements.First(n => n.Data.Equals(to));
                 Edge<TNode, TEdge>.AddNew(SVGEditor, this, edge, fromElement, toElement);
-                Edges.Add(edgeKey, edge);
             }
             newSetOfEdges.Add(edgeKey);
         }
@@ -211,15 +251,18 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
                 double newY = 0;
                 foreach (var neighborEdge in newNodeElement.Edges)
                 {
-                    var neighborMirroredPosition = MirroredAverageOfNeighborNodes(neighborEdge, newNodeElement);
-                    newX += neighborMirroredPosition.x / newNodeElement.Edges.Count();
-                    newY += neighborMirroredPosition.y / newNodeElement.Edges.Count();
+                    var (x, y) = MirroredAverageOfNeighborNodes(neighborEdge, newNodeElement);
+                    newX += x / newNodeElement.Edges.Count;
+                    newY += y / newNodeElement.Edges.Count;
                 }
                 newNodeElement.Cx = newX;
                 newNodeElement.Cy = newY;
             }
             SVGEditor.AddElement(newNodeElement);
         }
+
+        await Task.Yield();
+        StateHasChanged();
         nodeElements = SVGEditor.Elements.Where(e => e is Node<TNode, TEdge>).Select(e => (Node<TNode, TEdge>)e).ToArray();
 
         foreach (Edge<TNode, TEdge> edge in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Cast<Edge<TNode, TEdge>>())
@@ -259,18 +302,21 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
                 y: averageYPositionOfNeighborsNeighbors - neighborNode.Cy
             );
             var distanceBetweenAverageNeighborsNeighborsAndNeighbor = Math.Sqrt(Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.x, 2) + Math.Pow(differenceBetweenAverageNeighborsNeighborsAndNeighbor.y, 2));
-            var normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor = (
-                x: differenceBetweenAverageNeighborsNeighborsAndNeighbor.x / distanceBetweenAverageNeighborsNeighborsAndNeighbor,
-                y: differenceBetweenAverageNeighborsNeighborsAndNeighbor.y / distanceBetweenAverageNeighborsNeighborsAndNeighbor
+            var (x, y) = (
+                differenceBetweenAverageNeighborsNeighborsAndNeighbor.x / distanceBetweenAverageNeighborsNeighborsAndNeighbor,
+                differenceBetweenAverageNeighborsNeighborsAndNeighbor.y / distanceBetweenAverageNeighborsNeighborsAndNeighbor
             );
 
             return (
-                x: neighborNode.Cx - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.x * edgeLength,
-                y: neighborNode.Cy - normalizedVectorBetweenAverageNeighborsNeighborsAndNeighbor.y * edgeLength
+                x: neighborNode.Cx - x * edgeLength,
+                y: neighborNode.Cy - y * edgeLength
             );
         }
     }
 
+    /// <summary>
+    /// Updates the layout of the nodes so that they repulse each other while staying close to the ones that they are connected to via edges.
+    /// </summary>
     public Task ForceDirectedLayout()
     {
         Span<Node<TNode, TEdge>> nodes = nodeElements.AsSpan();
@@ -329,11 +375,14 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Move all edges to the back so that they are hidden if any nodes are displayed in the same position.
+    /// </summary>
     public void MoveEdgesToBack()
     {
         var prevSelectedShapes = SVGEditor.SelectedShapes.ToList();
         SVGEditor.ClearSelectedShapes();
-        foreach (Shape shape in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>))
+        foreach (Shape shape in SVGEditor.Elements.Where(e => e is Edge<TNode, TEdge>).Cast<Shape>())
         {
             SVGEditor.SelectShape(shape);
         }
@@ -341,6 +390,9 @@ public partial class GraphEditor<TNode, TEdge> : ComponentBase where TNode : IEq
         SVGEditor.SelectedShapes = prevSelectedShapes;
     }
 
+    /// <summary>
+    /// The elements that can be rendered in this graph. This normally doesn't need adjustments as the graph defaults to having support for the nodes and edges it shows.
+    /// </summary>
     protected List<SupportedElement> SupportedElements { get; set; } =
     [
         new(typeof(Node<TNode, TEdge>), element => element.TagName is "CIRCLE" && element.GetAttribute("data-elementtype") == "node"),
