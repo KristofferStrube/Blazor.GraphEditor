@@ -86,7 +86,7 @@ Now, you are ready to use the component in your page. A minimal example of this 
         />
 </div>
 @code {
-    private GraphEditor.GraphEditor<Page, Transition> GraphEditor = default!;
+    private GraphEditor<Page, Transition> GraphEditor = default!;
     private bool running = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
