@@ -21,9 +21,9 @@ You need to install .NET 7.0 or newer to use the library.
 ## Installation
 You can install the package via NuGet with the Package Manager in your IDE or alternatively using the command line:
 ```bash
-dotnet add package KristofferStrube.Blazor.SVGEditor
+dotnet add package KristofferStrube.Blazor.GraphEditor
 ```
-The package can be used in Blazor WebAssembly and Blazor Server projects. In the samples folder of this repository, you can find two projects that show how to use the `SVGEditor` component in both Blazor Server and WASM.
+The package can be used in Blazor WebAssembly and Blazor Server projects. In the samples folder of this repository, you can find a project that shows how to use the `GraphEditor` component in both Blazor WASM.
 
 ## Import
 You need to reference the package to use it in your pages. This can be done in `_Import.razor` by adding the following.
@@ -32,7 +32,7 @@ You need to reference the package to use it in your pages. This can be done in `
 ```
 
 ## Add to service collection
-To use the component in your pages you also need to register som services in your service collection. We have a single method that is exposed via the **Blazor.SVGEditor** library which adds all these services.
+To use the component in your pages you also need to register some services in your service collection. We have a single method that is exposed via the **Blazor.** library which adds all these services.
 
 ```csharp
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -42,7 +42,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 // Adding the needed services.
-builder.Services.AddSVGEditor();
+builder.Services.Add();
 
 await builder.Build().RunAsync();
 ```
@@ -53,7 +53,7 @@ For this, you need to insert the following tags in the `<head>` section of your 
 ```html
 <link href="_content/BlazorColorPicker/colorpicker.css" rel="stylesheet" />
 <link href="_content/Blazor.ContextMenu/blazorContextMenu.min.css" rel="stylesheet" />
-<link href="_content/KristofferStrube.Blazor.SVGEditor/kristofferStrubeBlazorSVGEditor.css" rel="stylesheet" />
+<link href="_content/KristofferStrube.Blazor./kristofferStrubeBlazor.css" rel="stylesheet" />
 ```
 The library uses Scoped CSS, so you must include your project-specific `.styles.css` CSS file in your project for the scoped styles of the library components. An example is in the test project in this repo:
 ```html
@@ -116,7 +116,7 @@ Now, you are ready to use the component in your page. A minimal example of this 
             await GraphEditor.ForceDirectedLayout();
             /// First 5 seconds also fit the viewport to all the nodes and edges in the graph.
             if (startTime - DateTimeOffset.UtcNow < TimeSpan.FromSeconds(5))
-                GraphEditor.SVGEditor.FitViewportToAllShapes(delta: 0.8);
+                GraphEditor..FitViewportToAllShapes(delta: 0.8);
             await Task.Delay(1);
         }
     }
